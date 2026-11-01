@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skills School</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-root="." data-page="home">
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Skills School · for Jonas</div>
+    <h1>How Claude's skills work, and how to make yours better</h1>
+    <p class="lede">A course built from the skills that are actually installed on your laptop. You can read the lessons, watch the short videos or listen to the podcast on a walk. All three cover the same ideas, so pick whichever suits the moment.</p>
+    <div class="media-row">
+      <a class="btn primary" href="lessons.html">Start lesson 1 →</a>
+      <a class="btn" href="videos.html">▶ Watch the videos</a>
+      <a class="btn" href="podcast/index.html">🎧 Listen to the podcast</a>
+    </div>
+  </section>
+
+  <h2>The one idea to remember</h2>
+  <p>A skill is a folder with a <code>SKILL.md</code> file. Claude doesn't read your skills up front. It reads <b>only their descriptions</b>, picks the one that fits your request, and only then loads the instructions, and later the scripts. That's why the <b>description is the trigger</b>, and why a skill can be long without costing anything until it's used.</p>
+
+  <div class="card" style="padding:10px">
+  <svg viewBox="0 0 960 250" width="100%" role="img" aria-label="Three levels: descriptions always loaded, SKILL.md body when chosen, scripts and references when a step needs them">
+    <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+    <rect x="10" y="20" width="270" height="200" rx="14" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+    <text x="30" y="52" font-weight="700" font-size="17" style="fill:var(--blue)">1 · Always in context</text>
+    <text x="30" y="80" font-size="15">name + description</text><text x="30" y="102" font-size="15">of every skill</text>
+    <text x="30" y="140" font-size="14" style="fill:var(--muted)">~100 words each. 10 skills</text><text x="30" y="160" font-size="14" style="fill:var(--muted)">≈ one page of text.</text>
+    <line x1="290" y1="120" x2="335" y2="120" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+    <rect x="345" y="20" width="270" height="200" rx="14" fill="none" stroke="var(--orange)" stroke-width="2.5"/>
+    <text x="365" y="52" font-weight="700" font-size="17" style="fill:var(--orange)">2 · When chosen</text>
+    <text x="365" y="80" font-size="15">the body of SKILL.md</text>
+    <text x="365" y="120" font-size="14" style="fill:var(--muted)">Your skill files: 52–85 lines.</text><text x="365" y="140" font-size="14" style="fill:var(--muted)">Triggered by a matching</text><text x="365" y="160" font-size="14" style="fill:var(--muted)">request or by /name.</text>
+    <line x1="625" y1="120" x2="670" y2="120" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+    <rect x="680" y="20" width="270" height="200" rx="14" fill="none" stroke="var(--green)" stroke-width="2.5"/>
+    <text x="700" y="52" font-weight="700" font-size="17" style="fill:var(--green)">3 · When a step needs it</text>
+    <text x="700" y="80" font-size="15">scripts are run,</text><text x="700" y="102" font-size="15">references are read</text>
+    <text x="700" y="140" font-size="14" style="fill:var(--muted)">A script's code never enters</text><text x="700" y="160" font-size="14" style="fill:var(--muted)">context. Only its output does.</text>
+  </svg>
+  </div>
+
+  <h2>Suggested path</h2>
+  <div class="grid">
+    <a class="card link" href="lessons.html#lesson-1"><span class="tag blue">Week 1</span><h3>Understand</h3>Lessons 1–4: what a skill is, how it's loaded, where skills live, how to write the description. <br><span class="muted small">Video 1 + 2 · Podcast ep. 1</span></a>
+    <a class="card link" href="lessons.html#lesson-5"><span class="tag orange">Week 2</span><h3>See it in your own work</h3>Lessons 5–6: pipelines like the audiobook studio, and the training-case loop that makes skills learn.<br><span class="muted small">Video 3 + 4 · Podcast ep. 2</span></a>
+    <a class="card link" href="improve.html"><span class="tag green">Week 3</span><h3>Fix and measure</h3>Lessons 7–8 and the audit: three real bugs in your skills, and how to test a skill with the skill-creator.</a>
+    <a class="card link" href="example.html"><span class="tag yellow">Week 4</span><h3>Build one</h3>The paper reviewer (full worked example), then pick a project from the list.<br><span class="muted small">Video 5 · Podcast ep. 3</span></a>
+  </div>
+
+  <h2>What's on your machine today</h2>
+  <div class="grid" id="counts"></div>
+  <p class="muted small">Counted from <code>~/.claude/skills</code>, the audiobook studio's project skills, the synced Anthropic skills and the plugins installed in this session.</p>
+</main>
+<script src="nav.js"></script>
+<script>
+fetch('data/skills.json').then(r => r.json()).then(d => {
+  const g = k => d.skills.filter(s => s.group === k).length;
+  const rows = [['personal', 'Personal skills', 'in ~/.claude/skills, usable in every project', 'blue'],
+    ['studio', 'Studio project skills', 'only inside the audiobook studio repo', 'orange'],
+    ['anthropic', 'Anthropic skills', 'synced from claude.ai (docx, pdf, skill-creator…)', 'green'],
+    ['plugin', 'Plugin skills', 'data analysis + PDF viewer plugins', 'yellow']];
+  document.getElementById('counts').innerHTML = rows.map(([k, h, s, c]) =>
+    `<a class="card link" href="skills.html#${k}"><div style="font-size:40px;font-weight:800;color:var(--${c})">${g(k)}</div><b>${h}</b><div class="muted small">${s}</div></a>`).join('');
+});
+</script>
+</body>
+</html>

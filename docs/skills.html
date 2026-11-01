@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Skills</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .sk { margin: 14px 0; }
+  .sk h3 { margin: 0 0 4px; font-family: ui-monospace, Menlo, monospace; font-size: 18px; }
+  .sk .desc { font-size: 14.5px; color: var(--muted); margin: 8px 0 0; }
+  .sk.broken { border-color: var(--red); }
+  .pipe { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 12px 0 4px; font-size: 14px; }
+  .pipe b { background: var(--surface); border: 1px solid var(--line); padding: 4px 10px; border-radius: 8px; font-family: ui-monospace, Menlo, monospace; font-weight: 600; }
+  .files { font: 13px/1.6 ui-monospace, Menlo, monospace; color: var(--muted); }
+  .filter { margin: 16px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type=search] { font: inherit; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); width: min(420px, 100%); }
+</style>
+</head>
+<body data-root="." data-page="skills">
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Inventory</div>
+    <h1>Your skills</h1>
+    <p class="lede">Everything Claude can load on this machine, grouped by where it lives. The <b>description</b> under each name is the exact text Claude sees at the start of every session, so it's what decides whether the skill gets used. Open "SKILL.md" to read the whole file.</p>
+    <div class="filter"><input type="search" id="q" placeholder="Filter: e.g. audio, website, pdf…"></div>
+  </section>
+
+  <h2 id="personal">Personal skills <span class="muted small">~/.claude/skills: available in every project</span></h2>
+  <p>Three are your own, written for your ML projects. Six are <b>symlinks</b> into the audiobook studio, so a fix made in the studio reaches every project. They form one pipeline:</p>
+  <div class="pipe"><b>speech-flow</b>→<b>narration-prep</b>→<b>kokoro-narrate</b>→<b>listen-check</b>→<b>audiobook-assemble</b> <span class="muted">· all reachable through</span> <b>voice-text</b></div>
+  <div id="g-personal"></div>
+
+  <h2 id="studio">Studio project skills <span class="muted small">fantasy-audiobook-studio/.claude/skills</span></h2>
+  <p>These live in a project's own <code>.claude/skills</code>, so they load <b>only when Claude runs inside that repo</b>. That's right for writing-specific skills. If you ever want one elsewhere, symlink it like the audio ones.</p>
+  <div id="g-studio"></div>
+
+  <h2 id="anthropic">Anthropic skills <span class="muted small">synced from claude.ai</span></h2>
+  <p>Shipped by Anthropic and kept up to date for you. Worth reading as examples of good descriptions. Note how they say <i>when not</i> to use them, too (docx: "Do NOT use for PDFs…").</p>
+  <div id="g-anthropic"></div>
+
+  <h2 id="plugin">Plugin skills</h2>
+  <p>Come bundled in plugins (<code>data</code>, <code>pdf-viewer</code>), named <code>plugin:skill</code>.</p>
+  <div id="g-plugin"></div>
+
+  <h2 id="builtin">Built into Claude Code</h2>
+  <div id="g-builtin"></div>
+</main>
+<script src="nav.js"></script>
+<script>
+const esc = s => (s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+let all = [];
+function render(q) {
+  q = (q || '').toLowerCase();
+  for (const g of ['personal', 'studio', 'anthropic', 'plugin', 'builtin']) {
+    const list = all.filter(s => s.group === g && (!q || (s.name + s.description + (s.plain || '')).toLowerCase().includes(q)));
+    document.getElementById('g-' + g).innerHTML = list.length ? `<div class="grid">${list.map(s => `
+      <div class="card sk ${s.broken ? 'broken' : ''}">
+        <h3>${esc(s.name)}</h3>
+        <span class="tag ${s.broken ? 'red' : s.source.startsWith('audiobook') ? 'orange' : 'blue'}">${esc(s.source)}</span>
+        ${s.pipeline ? `<span class="tag">stage ${s.pipeline} of 5</span>` : ''}
+        ${s.lines ? `<span class="tag">${s.lines} lines</span>` : ''}
+        ${s.plain ? `<p style="margin:8px 0 0">${esc(s.plain)}</p>` : ''}
+        <p class="desc">${esc(s.description)}</p>
+        ${s.files && s.files.length ? `<details><summary>Files (${s.files.length})</summary><div class="files">${s.files.map(f => `${esc(f.path)} · ${f.lines}`).join('<br>')}</div></details>` : ''}
+        ${s.skill_md ? `<details><summary>SKILL.md</summary><pre><code>${esc(s.skill_md)}</code></pre></details>` : ''}
+        ${s.broken ? `<p class="small" style="color:var(--red)">Fix on the <a href="improve.html#audit">Improve</a> page.</p>` : ''}
+      </div>`).join('')}</div>` : '<p class="muted">No match.</p>';
+  }
+}
+fetch('data/skills.json').then(r => r.json()).then(d => { all = d.skills; render(); if (location.hash) document.querySelector(location.hash)?.scrollIntoView(); });
+document.getElementById('q').addEventListener('input', e => render(e.target.value));
+</script>
+</body>
+</html>

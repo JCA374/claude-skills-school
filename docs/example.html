@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper Reviewer Skill</title>
+<link rel="stylesheet" href="style.css">
+<style>.flowsvg text { font-size: 14px; } .file { font-family: ui-monospace, Menlo, monospace; font-weight: 600; }</style>
+</head>
+<body data-root="." data-page="example">
+<main class="wrap narrow">
+  <section class="hero">
+    <div class="eyebrow">Worked example · ready to install</div>
+    <h1>A skill that reviews papers and reports</h1>
+    <p class="lede">A complete, tested skill you can copy into <code>~/.claude/skills</code> today. Below: the real-life situations it's for, how it's built and why, the full files, and how to make it learn.</p>
+    <div class="media-row"><a class="btn" href="videos.html#v5-reviewer">▶ Video: A skill that reviews papers</a><a class="btn" href="podcast/index.html">🎧 Episode 3</a></div>
+  </section>
+
+  <h2>Where you'd use it</h2>
+  <div class="grid">
+    <div class="card"><span class="tag blue">Real: your RL work</span><h3>Before you reproduce a paper</h3>You're about to spend a week reimplementing a new RL method for the bipedal walker. Ask first: <i>"Review this paper. Does the gain survive the seed variance?"</i> The ML checklist looks for best-of-N selection and untuned baselines, exactly the winner's-curse trap your own project site warns about.</div>
+    <div class="card"><span class="tag orange">Real: at work</span><h3>A consultancy or vendor report</h3>A 60-page market report lands in your inbox. The business checklist asks who paid for it, where each number comes from, and whether the summary claims more than the body shows. You get the three weakest points in five minutes.</div>
+    <div class="card"><span class="tag green">Real: your own write-ups</span><h3>Review yourself before publishing</h3>Run it on a project's lessons page or a podcast transcript before it goes live: "do my claims follow from my numbers?" It's the same check as the podcast skill's "every number must come from a file".</div>
+    <div class="card"><span class="tag yellow">Theoretical</span><h3>A weekly reading list</h3>With <code>/schedule</code>, a cloud agent could fetch new arXiv papers on a topic every Monday, review each with this skill, and leave you a ranked list. A cloud agent doesn't see your laptop's <code>~/.claude/skills</code>, so the skill would live in the repo's <code>.claude/skills</code>. With <code>voice-text</code>, the top review becomes a 3-minute MP3 for your walk.</div>
+  </div>
+
+  <h2>How it's built, and why</h2>
+  <div class="card" style="padding:8px 8px 0">
+  <svg class="flowsvg" viewBox="0 0 900 190" width="100%" role="img" aria-label="extract, pick checklist, review in five steps, write fixed-form report, verify quotes and numbers">
+    <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+    <g>
+      <rect x="5" y="40" width="150" height="90" rx="12" fill="none" stroke="var(--blue)" stroke-width="2"/><text x="80" y="75" text-anchor="middle" font-weight="700" style="fill:var(--blue)">1 Extract</text><text x="80" y="100" text-anchor="middle">script: text, facts</text>
+      <rect x="185" y="40" width="150" height="90" rx="12" fill="none" stroke="var(--orange)" stroke-width="2"/><text x="260" y="75" text-anchor="middle" font-weight="700" style="fill:var(--orange)">2 Checklist</text><text x="260" y="100" text-anchor="middle">one reference file</text>
+      <rect x="365" y="40" width="170" height="90" rx="12" fill="none" stroke="var(--green)" stroke-width="2"/><text x="450" y="75" text-anchor="middle" font-weight="700" style="fill:var(--green)">3 Review</text><text x="450" y="100" text-anchor="middle">claim → evidence →</text><text x="450" y="118" text-anchor="middle">method → sources</text>
+      <rect x="565" y="40" width="150" height="90" rx="12" fill="none" stroke="var(--yellow)" stroke-width="2"/><text x="640" y="75" text-anchor="middle" font-weight="700" style="fill:var(--yellow)">4 Report</text><text x="640" y="100" text-anchor="middle">fixed form, p. refs</text>
+      <rect x="745" y="40" width="150" height="90" rx="12" fill="none" stroke="var(--pink)" stroke-width="2"/><text x="820" y="75" text-anchor="middle" font-weight="700" style="fill:var(--pink)">5 Verify</text><text x="820" y="100" text-anchor="middle">script: quotes +</text><text x="820" y="118" text-anchor="middle">numbers exist</text>
+      <line x1="157" y1="85" x2="182" y2="85" stroke="var(--muted)" stroke-width="2" marker-end="url(#a2)"/><line x1="337" y1="85" x2="362" y2="85" stroke="var(--muted)" stroke-width="2" marker-end="url(#a2)"/><line x1="537" y1="85" x2="562" y2="85" stroke="var(--muted)" stroke-width="2" marker-end="url(#a2)"/><line x1="717" y1="85" x2="742" y2="85" stroke="var(--muted)" stroke-width="2" marker-end="url(#a2)"/>
+      <text x="80" y="165" text-anchor="middle" style="fill:var(--muted)">code (level 3)</text><text x="260" y="165" text-anchor="middle" style="fill:var(--muted)">reference (level 3)</text><text x="450" y="165" text-anchor="middle" style="fill:var(--muted)">judgment (SKILL.md)</text><text x="640" y="165" text-anchor="middle" style="fill:var(--muted)">judgment (SKILL.md)</text><text x="820" y="165" text-anchor="middle" style="fill:var(--muted)">code: the gate</text>
+    </g>
+  </svg></div>
+  <div class="tablewrap"><table>
+    <tr><th>Design choice</th><th>Lesson it applies</th></tr>
+    <tr><td>Description lists "review, referee, critique, sanity-check, does this hold up?" and "even if they don't say review"</td><td><a href="lessons.html#lesson-4">4: the description is the trigger</a></td></tr>
+    <tr><td>Three checklists as <code>references/</code>, and a table saying which one to read</td><td><a href="lessons.html#lesson-2">2: progressive disclosure</a></td></tr>
+    <tr><td><code>extract.py</code> gives page-marked text and facts (n, p-values, figures)</td><td><a href="lessons.html#lesson-5">5: scripts for the exact work</a></td></tr>
+    <tr><td><code>check_quotes.py</code> must exit 0 before "done"</td><td><a href="lessons.html#lesson-5">5: verification gates</a>, like listen-check's second model</td></tr>
+    <tr><td>Each checklist item says <i>why</i> it matters</td><td><a href="lessons.html#lesson-8">8: explain the why</a></td></tr>
+    <tr><td><code>tests/cases.md</code> + test papers with known flaws</td><td><a href="lessons.html#lesson-6">6: how a skill learns</a></td></tr>
+  </table></div>
+
+  <h2>Install it (2 minutes)</h2>
+<pre><code># from a clone of this site's repo
+cp -r docs/examples/paper-review ~/.claude/skills/paper-review
+# then, in any folder with a PDF:
+claude "review paper.pdf, I want to know if the main result holds up"</code></pre>
+  <p class="muted small">Needs <code>pdftotext</code> (installed on your laptop) or the Python <code>pypdf</code> package (also installed).</p>
+
+  <h2>The files</h2>
+  <p>Click to read each one. They're also on GitHub in <code>docs/examples/paper-review/</code>.</p>
+  <div id="files"></div>
+
+  <h2>Tested here</h2>
+  <div class="callout good">I ran both scripts on a two-page test PDF with a review that contained one made-up number ("91% recall") and one made-up quote ("the effect is large in every subgroup"). <code>extract.py</code> found 2 pages, 1 figure, 1 table, 2 references and n = 240. <code>check_quotes.py</code> passed the real quote and the real numbers (0.83, 0.79, 240) and flagged exactly the two made-up items, exiting with 1.</div>
+
+  <h2>Make it learn: your first two weeks</h2>
+  <div class="step"><div class="n">1</div><div><b>Build a test set of 6 papers</b>: 2 you know are solid, 2 with flaws you know, and 2 retracted or heavily criticised papers where the flaw is public (Retraction Watch is a good source). Write <code>tests/papers/NN.expected.md</code>: the flaws a good review must find.</div></div>
+  <div class="step"><div class="n">2</div><div><b>Benchmark:</b> <i>"Use skill-creator to evaluate paper-review on tests/papers: with and without the skill."</i> Assertion per paper: "the review names flaw X".</div></div>
+  <div class="step"><div class="n">3</div><div><b>Every miss becomes a case</b> in <code>tests/cases.md</code> and a rule in the right checklist, with the why. Re-run all six.</div></div>
+  <div class="step"><div class="n">4</div><div><b>Tune the trigger:</b> run skill-creator's description optimiser with near misses that should <i>not</i> fire ("summarise this paper", "fix the grammar in my report").</div></div>
+  <div class="callout warn"><b>Limits to remember.</b> A model review is a second reader, not a referee of record: it can't rerun experiments, and it can misjudge a field it knows less about. That's why the form has a <b>confidence</b> line, and why sources it couldn't check are marked "not verified".</div>
+</main>
+<script src="nav.js"></script>
+<script>
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const files = ['SKILL.md', 'references/ml-papers.md', 'references/statistics.md', 'references/business-reports.md', 'scripts/extract.py', 'scripts/check_quotes.py', 'tests/cases.md'];
+Promise.all(files.map(f => fetch('examples/paper-review/' + f).then(r => r.text()).catch(() => '(not found)'))).then(txts => {
+  document.getElementById('files').innerHTML = files.map((f, i) =>
+    `<details ${i === 0 ? 'open' : ''}><summary><span class="file">paper-review/${f}</span> <span class="muted small">· ${txts[i].split('\n').length} lines</span></summary><pre><code>${esc(txts[i])}</code></pre></details>`).join('');
+});
+</script>
+</body>
+</html>

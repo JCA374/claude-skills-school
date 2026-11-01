@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill Projects</title>
+<link rel="stylesheet" href="style.css">
+<style>.proj h3 { margin-bottom: 4px; } .proj .learn { font-size: 14px; color: var(--muted); margin-top: 8px; } .proj .first { font-size: 14.5px; margin-top: 8px; }</style>
+</head>
+<body data-root="." data-page="projects">
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Learn by building</div>
+    <h1>Projects to learn skills with</h1>
+    <p class="lede">Each project teaches one or two ideas from the lessons and is useful on its own. The first version should take one evening; the learning comes from the cases you add afterwards. Start with a ★ one.</p>
+  </section>
+
+  <h2>Small: one evening</h2>
+  <div class="grid">
+    <div class="card proj"><span class="tag green">★ start here</span><h3>Fix your deploy skill</h3>Turn <code>deploy.md</code> into a proper <code>deploy/SKILL.md</code>, fix the path, and add a verification step ("curl the site, expect 200").<div class="learn">Teaches: lesson 3 (where skills live), lesson 5 (done = verified)</div></div>
+    <div class="card proj"><span class="tag green">★</span><h3>paper-review</h3>Install the <a href="example.html">worked example</a>, test it on six papers, add your first two cases.<div class="learn">Teaches: references, gate scripts, the case loop</div></div>
+    <div class="card proj"><h3>commit-message</h3>Your style for commit messages and the attribution line. Tiny, but you'll see it fire (or not) dozens of times a week. A perfect description-tuning exercise.<div class="learn">Teaches: lesson 4 (triggers), description optimiser</div></div>
+    <div class="card proj"><h3>run-check</h3>"How is the training going?": read <code>stats.csv</code> + <code>events.jsonl</code> of the newest run and answer in five lines, with a sparkline. Uses the same data conventions as ml-project-site.<div class="learn">Teaches: building on an existing convention</div></div>
+  </div>
+
+  <h2>Medium: a weekend</h2>
+  <div class="grid">
+    <div class="card proj"><span class="tag green">★</span><h3>experiment-design</h3>Before every training run: state the hypothesis, the metric, the baseline, the number of seeds, and what result would change your mind. Writes <code>experiments/NN-plan.md</code>; after the run, failure-analysis-report checks it.<div class="learn">Teaches: skills that hand over to skills (lesson 5); a fixed output form</div></div>
+    <div class="card proj"><h3>skill-lint</h3>A script that checks every skill: folder + SKILL.md, required fields, description length, paths that exist (it would have caught all three audit bugs), scripts executable.<div class="learn">Teaches: scripts as gates; it's a skill about skills</div></div>
+    <div class="card proj"><h3>lesson-video</h3>Generalise this site's <code>video/build_videos.py</code>: write scenes (narration + visual), voice them with voice-text, render, never loop. Then every project gets explainer films.<div class="learn">Teaches: bundling repeated work into scripts/; composition</div></div>
+    <div class="card proj"><h3>report-reviewer for work</h3>A version of paper-review tuned to the reports you actually get: your company's terms, the numbers that matter, the usual mistakes.<div class="learn">Teaches: domain references; project-level skills shared with colleagues</div></div>
+  </div>
+
+  <h2>Large: a learning project</h2>
+  <div class="grid">
+    <div class="card proj"><span class="tag green">★</span><h3>Skill gym</h3>A repo with 10 of your real past requests as test prompts. For each skill change, skill-creator runs with vs without, and a page shows the scores over time, built with ml-project-site, with a podcast episode when a skill improves.<div class="learn">Teaches: lesson 7 for real; turns skill-writing into an ML-style experiment, which is how you like to work</div></div>
+    <div class="card proj"><h3>Research digest</h3>Weekly: fetch new papers on RL / evolution strategies, review each with paper-review, rank them, voice the top three with voice-text, publish as a podcast tab.<div class="learn">Teaches: /schedule, chaining four skills, project-level skills for cloud agents</div></div>
+    <div class="card proj"><h3>Teach a skill back</h3>Pick a skill and have Claude generate this kind of school for it: lessons, videos, a podcast, from the skill's own files. It's the same project as this site, but one level more general.<div class="learn">Teaches: everything; a skill that makes courses</div></div>
+  </div>
+
+  <h2>How to run any of these</h2>
+  <div class="step"><div class="n">1</div><div>Do the task once by hand with Claude, in a normal chat.</div></div>
+  <div class="step"><div class="n">2</div><div>Say: <i>"Turn what we just did into a skill. Use skill-creator."</i> It interviews you, drafts SKILL.md and test prompts.</div></div>
+  <div class="step"><div class="n">3</div><div>Use it for real for a week. Every time it's off, add a case and a rule with the why.</div></div>
+  <div class="step"><div class="n">4</div><div>Measure: with vs without. Tune the description. Ask for a podcast episode about what changed.</div></div>
+</main>
+<script src="nav.js"></script>
+</body>
+</html>

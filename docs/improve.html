@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Improve Your Skills</title>
+<link rel="stylesheet" href="style.css">
+<style>.sev { font-weight: 700; } .sev.high { color: var(--red); } .sev.med { color: var(--orange); } .sev.low { color: var(--muted); }</style>
+</head>
+<body data-root="." data-page="improve">
+<main class="wrap narrow">
+  <section class="hero">
+    <div class="eyebrow">General knowledge + an audit of yours</div>
+    <h1>Improving skills</h1>
+    <p class="lede">First, what makes any skill good. Then a check of your own skills against that list, with the exact fixes. Each finding was verified on this laptop.</p>
+  </section>
+
+  <h2>The ten habits of good skills</h2>
+  <div class="tablewrap"><table>
+    <tr><th>#</th><th>Habit</th><th>Why</th></tr>
+    <tr><td>1</td><td><b>Description = what + when + trigger words</b></td><td>It's the only part Claude sees before choosing. Claude tends to under-use skills, so be explicit.</td></tr>
+    <tr><td>2</td><td><b>Short body, heavy scripts</b></td><td>Instructions cost context every time; a script's code costs nothing and runs the same every time.</td></tr>
+    <tr><td>3</td><td><b>References for long or optional detail</b>, with "read X when Y"</td><td>Progressive disclosure: only the relevant checklist gets loaded.</td></tr>
+    <tr><td>4</td><td><b>Explain the why</b>, avoid shouting ALWAYS/NEVER</td><td>A reason lets Claude handle cases the rule didn't foresee.</td></tr>
+    <tr><td>5</td><td><b>Define done + a verification command</b></td><td>Otherwise "done" means "looks done". Your Pages check and <code>voice.sh status</code> are models for this.</td></tr>
+    <tr><td>6</td><td><b>Point to a reference implementation</b></td><td>A working example beats a page of explanation. Keep the path correct.</td></tr>
+    <tr><td>7</td><td><b>Write lessons back into the skill</b></td><td>The chat is forgotten; the skill file isn't. Add a case, a rule and, if detectable, a test.</td></tr>
+    <tr><td>8</td><td><b>Measure against a baseline</b></td><td>skill-creator: with vs without, on 3–5 real prompts. Keep what wins.</td></tr>
+    <tr><td>9</td><td><b>Mark ask-first actions</b></td><td>Public repos, deletes, deploys: say in the skill that Claude asks first.</td></tr>
+    <tr><td>10</td><td><b>No machine-specific surprises</b></td><td>Paths with the wrong case, hard-coded IPs, missing dependencies: the skill breaks silently on another day or machine.</td></tr>
+  </table></div>
+
+  <h2 id="audit">Audit of your skills</h2>
+  <p>Checked 2026-11-01 against the files in <code>~/.claude/skills</code>.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Severity</th><th>Skill</th><th>Finding</th><th>Fix</th></tr>
+    <tr><td class="sev high">High</td><td>deploy.md</td><td>A loose file, not a <code>deploy/SKILL.md</code> folder, so it isn't loaded and <code>/deploy</code> doesn't work.</td><td><code>mkdir ~/.claude/skills/deploy && mv ~/.claude/skills/deploy.md ~/.claude/skills/deploy/SKILL.md</code></td></tr>
+    <tr><td class="sev high">High</td><td>deploy.md</td><td>rsync source is <code>/home/jonas/Code/sport/vm/</code>, but the folder is <code>~/code/sport/vm</code> (lowercase). The rsync step would fail with "No such file or directory".</td><td>Change to <code>/home/jonas/code/sport/vm/</code>, then add "Check the folder exists before rsync."</td></tr>
+    <tr><td class="sev med">Medium</td><td>failure-analysis-report</td><td>Its reference implementation is given as <code>~/Code/games/tetris/…</code>; the real path is <code>~/code/games/tetris/tetris-heuristics-v2</code>. Claude can't find the example it's told to read first.</td><td>Fix the case in both paths.</td></tr>
+    <tr><td class="sev med">Medium</td><td>failure-analysis-report</td><td>No <code>scripts/</code>: every use rebuilds <code>record_games.py</code>/<code>analyze_games.py</code> from the Tetris code.</td><td>Generalise the report builder (the AUC + partial-correlation + HTML part) into <code>scripts/report.py</code>; keep the recorder per project.</td></tr>
+    <tr><td class="sev low">Low</td><td>speech-flow</td><td>Points to <code>fantasy-novella/references/writing-for-the-ear.md</code>, which only exists inside the studio repo. From other projects (via voice-text) the link doesn't resolve.</td><td>Give the full path <code>~/code/other/fantasy-audiobook-studio/.claude/skills/fantasy-novella/references/…</code>, or say "studio only".</td></tr>
+    <tr><td class="sev low">Low</td><td>failure-analysis-report</td><td>Description doesn't mention questions like "why does it crash?" or "what features should I add?".</td><td>Add those phrases; test with the description optimiser.</td></tr>
+    <tr><td class="sev low">Low</td><td>all personal skills</td><td>No evals yet: there's no measurement that the skills beat no-skill.</td><td>Start with project-podcast (easy to judge): 3 prompts, with vs without.</td></tr>
+  </table></div>
+  <div class="callout">Want these fixed? Ask Claude: <i>"Apply the audit fixes from the Skills School improve page."</i> The first three are one-line edits.</div>
+
+  <h2>What you already do well</h2>
+  <ul>
+    <li><b>A real learning loop</b> in the studio: 10 cases, before/after audio, rule tests that must pass, proposals you approve.</li>
+    <li><b>Verification gates</b>: "Deployment counts only when…", <code>voice.sh status</code>, the podcast's wait-for-feed loop.</li>
+    <li><b>Composition</b>: ml-project-site → project-podcast → voice-text → the five stages. One fix improves every layer above it.</li>
+    <li><b>Ask-first rules</b>: "ask the user before creating a public repo", "don't pick a voice for them".</li>
+    <li><b>Explained decisions</b>: listen-check's section on why there is no pitch check, with the measurements.</li>
+  </ul>
+
+  <h2>The improvement loop, in one picture</h2>
+<pre><code>  use the skill ──► something is off ──► case (what, where, before/after)
+        ▲                                         │
+        │                                         ▼
+  re-run all cases ◄── test (if detectable) ◄── rule + WHY in the right file
+        │
+        └──► every few weeks: skill-creator eval (with vs without) + description check</code></pre>
+
+  <h2>Useful prompts</h2>
+  <ul>
+    <li><i>"Use skill-creator to review my ml-project-site skill and suggest improvements."</i></li>
+    <li><i>"That was wrong. Write the lesson into the skill, with the why."</i></li>
+    <li><i>"Which of my skills would have fired for this request, and why?"</i></li>
+    <li><i>"Turn what we just did into a new skill."</i> (after a task you'll repeat)</li>
+  </ul>
+</main>
+<script src="nav.js"></script>
+</body>
+</html>

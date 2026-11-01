@@ -1,0 +1,35 @@
+title: How Claude picks and loads a skill
+kind: voiceover
+author: ''
+narrator: Kokoro TTS (af_heart)
+narration:
+  narrator: af_heart
+  speed: 1.05
+  paragraph_pause: 0.6
+chapters:
+  ch01: 'At the start: only a list'
+  ch02: Your request meets the descriptions
+  ch03: Three levels of loading
+  ch04: Or call it yourself
+  ch05: Why the description matters most
+sources:
+  ch01:
+    path: /home/jonas/code/skill/video/v2-loading/script.md
+    sha1: 41934e206f375679b9fd8522ad38c2a405239fc7
+    section: 'At the start: only a list'
+  ch02:
+    path: /home/jonas/code/skill/video/v2-loading/script.md
+    sha1: 41934e206f375679b9fd8522ad38c2a405239fc7
+    section: Your request meets the descriptions
+  ch03:
+    path: /home/jonas/code/skill/video/v2-loading/script.md
+    sha1: 41934e206f375679b9fd8522ad38c2a405239fc7
+    section: Three levels of loading
+  ch04:
+    path: /home/jonas/code/skill/video/v2-loading/script.md
+    sha1: 41934e206f375679b9fd8522ad38c2a405239fc7
+    section: Or call it yourself
+  ch05:
+    path: /home/jonas/code/skill/video/v2-loading/script.md
+    sha1: 41934e206f375679b9fd8522ad38c2a405239fc7
+    section: Why the description matters most

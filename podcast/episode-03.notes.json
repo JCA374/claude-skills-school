@@ -1,0 +1,5 @@
+["Designing a paper-review skill: description, a 5-step review path, a fixed output form",
+ "Checklists as references/ (ML, statistics, business reports); a script extracts text, tables, references",
+ "A test set of papers with known flaws; every missed flaw becomes a case",
+ "Guard rail: every quote and number in a review must be found in the paper (checked by a script)",
+ "Full worked example on the 'Paper reviewer' tab"]

@@ -1,0 +1,83 @@
+{
+ "episodes": [
+  {
+   "n": 3,
+   "title": "Episode 03: A skill that reviews papers",
+   "date": "Sun 01 Nov 2026, 11:45",
+   "minutes": 3.5,
+   "mp3": "../podcast/episode-03.mp3",
+   "notes": [
+    "Designing a paper-review skill: description, a 5-step review path, a fixed output form",
+    "Checklists as references/ (ML, statistics, business reports); a script extracts text, tables, references",
+    "A test set of papers with known flaws; every missed flaw becomes a case",
+    "Guard rail: every quote and number in a review must be found in the paper (checked by a script)",
+    "Full worked example on the 'Paper reviewer' tab"
+   ],
+   "transcript": [
+    "In this episode, we design a skill you do not have yet. It reviews academic papers and long reports. It is a good first project, because you can test it on papers you already know well.",
+    "Start with the description, because that is the trigger. It should say what the skill does and when to use it. Something like this. Review an academic paper, a thesis chapter or a technical report, the way a careful referee would. Use it when someone asks to review, critique, referee, check or give feedback on a paper or report, or attaches a PDF and asks if it holds up.",
+    "Then the instructions. A good review follows a fixed path, so the skill should too. First, read the whole thing once and write a three sentence summary of the claim. If I cannot summarize the claim, that is already the first finding. Second, check the claim against the evidence. Does every main result come from a table, a figure or a test? Are the sample sizes stated? Is there a baseline? Third, look at the method. Could the result be luck, a leak between training and test data, or a choice made after seeing the results? Fourth, check the references. Are the important sources cited, and does the paper say what those sources actually say? Fifth, the writing. Is the abstract honest about the result?",
+    "The output should be a fixed form. A summary, the major issues, the minor issues, questions for the authors, and a verdict with a confidence level. Every issue must point to a page or a section. A review that says \"the method is weak\" without saying where is useless.",
+    "Now the parts that make it a real skill instead of a long prompt. Put the checklists in a reference folder. One for machine learning papers, one for statistics, one for business reports. The skill file tells me to open only the one that fits. A script can pull the text and the tables out of the PDF, and count the figures and references, so I start from facts.",
+    "Then make it learn, the same way your audiobook studio does. Keep a folder of test papers. Some are good, some have known flaws, and a few could be retracted papers where the flaw is public. Each time I miss a flaw, that becomes a case. Write down what I missed and why, then add a rule. Run every test paper again after each change. And use the skill creator to compare reviews with the skill and without it, so you know the skill is actually helping.",
+    "One warning matters here. A reviewer skill must never invent a citation or a number. So add a rule that every quote and every number in the review must be found in the paper text, and let a script check it. That is the same idea as your listen check. A second reader confirms the first.",
+    "It also fits your other skills. The PDF skill reads the file. The failure analysis report gives you a way to show where reviews go wrong. And voice text could even read the review aloud, so you can listen to it on a walk.",
+    "On the website, the projects tab has more ideas like this, from small to large. Pick one, build the first version in an evening, and then let the cases make it better. That is how every good skill on your machine was made."
+   ]
+  },
+  {
+   "n": 2,
+   "title": "Episode 02: How your skills learn",
+   "date": "Sun 01 Nov 2026, 12:11",
+   "minutes": 3.8,
+   "mp3": "../podcast/episode-02.mp3",
+   "notes": [
+    "The studio's training loop: report \u2192 case (before/after audio) \u2192 author picks \u2192 rule \u2192 rule test",
+    "10 training cases so far; case 01 (flat short question) now runs on every book and podcast",
+    "listen-check: Whisper + a second model caught 'I want it on the record' \u2192 'I wanted on the record' (case 08)",
+    "ml-project-site's 'rules learned the hard way': never rebase --autostash",
+    "skill-creator: with-skill vs baseline evals, description trigger tests; explain the why, keep SKILL.md < ~500 lines"
+   ],
+   "transcript": [
+    "Welcome back. Last time we covered what a skill is. Today is about how a skill gets better. And you have a real example, so I will use it.",
+    "A skill does not learn by itself the way a model learns from data. It learns because someone writes down a lesson. The skill file is a living document. Every time something goes wrong, the fix can become a rule. The next time, I follow that rule without being told.",
+    "Your audiobook studio does this better than anything else on your machine. It has a training folder with ten cases so far. Each case is a moment where the audio sounded wrong. Case one was a short question, \"Can I?\", that ended flat, so it sounded cut off. I wrote the line twice, once with the old rules and once with a fix, and rendered both. You listened and picked the better one. Only then did the fix become a rule in the narration prep skill. Today that rule runs automatically on every book and every podcast, including this one.",
+    "Notice the order. A problem is reported. It becomes a case, with a before and an after. You choose. Then it becomes a rule. And a test is added, so a later rule can never quietly undo an earlier fix. There are tests like that for every scanner rule, and they must pass before anything is published.",
+    "The second source of lessons is a machine listener. The listen check skill has Whisper transcribe the finished audio and compare it with the script. In one book, a character asks for something to go on the record. Kokoro kept slurring the words want and it into a single word, wanted. Whisper caught it four times, and the check only keeps a flag when a second, slower model hears the same thing. That became case eight.",
+    "Your project site skill learned in a different way. It has a section called rules learned the hard way. One rule says the publisher must never run a rebase with auto stash, because once it silently threw away an hour of work. That single sentence now protects every project you start.",
+    "So that is the first habit: when something breaks, write the lesson into the skill, not just into the chat. A chat is forgotten. A skill is not.",
+    "The second habit is to measure. The skill creator, which Anthropic ships, runs the same task twice, once with the skill and once without it. Then it compares the results side by side. If the skill does not beat the baseline, it is not pulling its weight yet. It can also test the description alone. It writes realistic requests, some that should trigger the skill and some that should not, and checks how often I pick it.",
+    "The third habit is about how to write the lesson. Explain why. If a rule says never, in capital letters, I will obey it, but I cannot judge the cases the rule did not foresee. If the rule says why, I can. Your listen check skill does this well. It explains why there is no pitch check. You measured twenty six lines. Questions fell in pitch just like statements. So a rise detector would flag every question. Because the reason is written down, nobody adds that check again by mistake.",
+    "Last, keep it lean. A skill file should stay under about five hundred lines. Move long details into reference files, and say exactly when to open them. And if you notice me writing the same helper script for the third time, that script belongs in the skill's scripts folder.",
+    "Next episode, we will build something new together on paper: a skill that reviews academic papers and reports."
+   ]
+  },
+  {
+   "n": 1,
+   "title": "Episode 01: What a skill is, and how I use one",
+   "date": "Sun 01 Nov 2026, 12:09",
+   "minutes": 3.8,
+   "mp3": "../podcast/episode-01.mp3",
+   "notes": [
+    "A skill = a folder with SKILL.md (name + description + instructions) and optional scripts/, references/, assets/",
+    "Progressive disclosure: description always loaded (~100 words), body on trigger, scripts/references only when a step needs them",
+    "The description is the trigger: say what AND when, in the words you actually use",
+    "Your 9 personal skills: 3 written for your projects, 6 from the audiobook studio (symlinked). deploy.md is a loose file, so it is not loaded: move it to deploy/SKILL.md",
+    "CLAUDE.md = short permanent preferences; skills = procedures that wait until needed"
+   ],
+   "transcript": [
+    "Hi Jonas. This is the first episode of your skills school. You asked me to explain how skills work and how I work with them. So let's start at the very beginning.",
+    "A skill is a folder. Inside it there is one file that matters most. It is called the skill file. It starts with a short header with two fields: a name, and a description. Below the header come the instructions, written in plain language, the way you would brief a new colleague. Next to the skill file there can be scripts, reference documents and templates.",
+    "Now here is the part most people miss. When a session starts, I do not read your skills. I only see a list. Each line on that list is a skill's name and its description. That is about a hundred words per skill. So you can have dozens of skills installed and they cost almost nothing until they are needed.",
+    "When you ask me for something, I compare your request with those descriptions. If one fits, I load that skill. Only then do I read the full instructions. And only if the instructions point me to a script or a reference file do I open that too. A script is even cheaper. I run it, and only its output comes back to me. The code itself never has to fill my memory.",
+    "So there are three levels. The description is always there. The instructions arrive when the skill is chosen. The scripts and references arrive only when a step needs them. This is called progressive disclosure, and it is the whole trick.",
+    "That means the description is the most important sentence you will ever write in a skill. It is not a summary for humans. It is the trigger. If it does not say when to use the skill, I may never pick it. Your project site skill is a good example. Its description lists the words you actually say: a homepage, a progress page, replays, watch the model play, a film of the agent. That is why it fires when you need it.",
+    "You can also call a skill yourself. Type a slash and its name, and it loads straight away. Your deploy instructions for the World Cup tips site were meant to work like that. But there is a catch. They sit in a loose file in your skills folder, not in a folder of their own with a skill file inside. So right now they do not show up in my list at all. Moving them into a folder of their own, as a proper skill file, fixes it. The lessons on the website show how.",
+    "Let me tell you what you already have. You wrote a failure analysis report skill after the Tetris project. You have the project site skill and the podcast skill. And you have six skills that come from the audiobook studio. They are linked into your skills folder, so every project can use them. Speech flow and narration prep get the text ready. Kokoro narrate and listen check make the audio and check it. Audiobook assemble packages it. And voice text ties them all together. This very episode was made by those six skills.",
+    "On top of that come skills that Anthropic provides, like the skill creator, and the data and PDF plugins.",
+    "One more thing worth knowing. A skill is not the same as your personal instructions file. That file is read in every session, so it should hold short, permanent preferences. A skill holds a whole procedure, and it waits quietly until it is needed. Your instructions file already does this well. It says which skill to use for analysis and which for project sites, and then it leaves the details to the skills.",
+    "In the next episode, I will tell you how your skills learn. They have been getting better case by case, and the audiobook studio shows exactly how."
+   ]
+  }
+ ]
+}

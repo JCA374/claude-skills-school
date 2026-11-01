@@ -1,0 +1,7 @@
+voice/*/audio/*.wav
+voice/*/audio/cache/
+voice/**/.cache/
+video/build/
+__pycache__/
+*.log
+voice/*/audio/

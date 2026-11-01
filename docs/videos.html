@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skills Videos</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .vid { margin: 28px 0 40px; scroll-margin-top: 70px; }
+  .vid h2 { margin: 6px 0 12px; }
+  .scenes { counter-reset: s; padding: 0; list-style: none; }
+  .scenes li { counter-increment: s; margin: 10px 0; padding-left: 36px; position: relative; }
+  .scenes li::before { content: counter(s); position: absolute; left: 0; top: 2px; width: 24px; height: 24px; border-radius: 50%; background: var(--sunk); border: 1px solid var(--line); font-size: 13px; display: grid; place-items: center; color: var(--muted); }
+  .scenes a { cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body data-root="." data-page="videos">
+<main class="wrap narrow">
+  <section class="hero">
+    <div class="eyebrow">Short explainer films</div>
+    <h1>Videos</h1>
+    <p class="lede">Each film is one to two minutes long and goes with a lesson. They were made with your own skills: the narration was written for the ear, voiced by Kokoro and checked by Whisper (<code>voice-text</code>, kind voiceover). Every scene was drawn from real files on your machine. They play once and stop; click a scene to jump to it.</p>
+  </section>
+  <div id="list"><p class="muted">Loading…</p></div>
+</main>
+<script src="nav.js"></script>
+<script>
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+fetch('data/videos.json', { cache: 'no-store' }).then(r => r.json()).then(d => {
+  document.getElementById('list').innerHTML = d.videos.map((v, i) => `
+    <section class="vid card" id="${v.id}">
+      <div class="eyebrow">Video ${i + 1} · ${Math.floor(v.seconds / 60)}:${String(v.seconds % 60).padStart(2, '0')} · <a href="${v.lesson === 'example' ? 'example.html' : 'lessons.html#' + v.lesson}">${v.lesson === 'example' ? 'Paper reviewer' : 'Lesson ' + v.lesson.split('-')[1]}</a></div>
+      <h2>${esc(v.title)}</h2>
+      <video controls preload="metadata" playsinline poster="video/${v.id}.jpg" src="video/${v.id}.mp4"></video>
+      <details><summary>Scenes and narration</summary><ol class="scenes">${v.scenes.map((s, k) =>
+        `<li><a data-v="${v.id}" data-k="${k}">${esc(s.title)}</a><div class="muted small">${esc(s.say)}</div></li>`).join('')}</ol></details>
+    </section>`).join('');
+  // scene jump: start times from the durations stored with each video
+  d.videos.forEach(v => {
+    const el = document.querySelector(`#${v.id} video`);
+    document.querySelectorAll(`a[data-v="${v.id}"]`).forEach(a => a.onclick = () => {
+      el.currentTime = (v.starts || [])[+a.dataset.k] || 0; el.play();
+    });
+  });
+  if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+}).catch(() => document.getElementById('list').innerHTML = '<p>Videos are still rendering.</p>');
+</script>
+</body>
+</html>

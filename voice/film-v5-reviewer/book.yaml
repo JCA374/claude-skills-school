@@ -1,0 +1,30 @@
+title: A skill that reviews papers
+kind: voiceover
+author: ''
+narrator: Kokoro TTS (af_heart)
+narration:
+  narrator: af_heart
+  speed: 1.05
+  paragraph_pause: 0.6
+chapters:
+  ch01: The idea
+  ch02: The review path
+  ch03: The folder
+  ch04: Make it learn
+sources:
+  ch01:
+    path: /home/jonas/code/skill/video/v5-reviewer/script.md
+    sha1: d631b74782076c582883b97814acffa781139c1b
+    section: The idea
+  ch02:
+    path: /home/jonas/code/skill/video/v5-reviewer/script.md
+    sha1: d631b74782076c582883b97814acffa781139c1b
+    section: The review path
+  ch03:
+    path: /home/jonas/code/skill/video/v5-reviewer/script.md
+    sha1: d631b74782076c582883b97814acffa781139c1b
+    section: The folder
+  ch04:
+    path: /home/jonas/code/skill/video/v5-reviewer/script.md
+    sha1: d631b74782076c582883b97814acffa781139c1b
+    section: Make it learn

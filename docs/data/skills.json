@@ -1,0 +1,534 @@
+{
+ "skills": [
+  {
+   "group": "personal",
+   "name": "audiobook-assemble",
+   "description": "Master rendered chapter WAVs into a finished audiobook: loudness-normalised per-chapter MP3s plus one .m4b with chapter markers, cover art and metadata. Use when the user wants to build, export, package, master or finish the audiobook, make an m4b/mp3, or add chapters/cover/metadata. Input is books/<slug>/audio/chNN.wav from kokoro-narrate.",
+   "plain": "Masters the WAVs into loudness-normalised MP3s and one .m4b with chapters and cover.",
+   "source": "audiobook studio (symlink)",
+   "pipeline": 5,
+   "lines": 52,
+   "files": [
+    {
+     "path": "SKILL.md",
+     "lines": 52
+    },
+    {
+     "path": "scripts/assemble.py",
+     "lines": 125
+    }
+   ],
+   "skill_md": "---\nname: audiobook-assemble\ndescription: \"Master rendered chapter WAVs into a finished audiobook: loudness-normalised per-chapter MP3s plus one .m4b with chapter markers, cover art and metadata. Use when the user wants to build, export, package, master or finish the audiobook, make an m4b/mp3, or add chapters/cover/metadata. Input is books/<slug>/audio/chNN.wav from kokoro-narrate.\"\n---\n\n# Audiobook Assemble\n\n> From another project: run these commands through the **voice-text** skill's launcher (`voice.sh <command> voice/<slug>`); there `books/<slug>` = `voice/<slug>`.\n\n```bash\n.venv/bin/python .claude/skills/audiobook-assemble/scripts/assemble.py books/<slug> [--bitrate 64k]\n```\n\nNeeds `books/<slug>/book.yaml`. Create it if it's missing:\n\n```yaml\ntitle: The Thief of Greyfell\nauthor: <ask the user>\nnarrator: Kokoro TTS (bm_george)\nyear: 2026\ncover: cover.jpg                     # optional; square JPG, ≥1400 px, relative to the book dir\nchapters:                            # stem -> title as shown in the player\n  ch01: \"Chapter One: The Greyfell Road\"\n```\n\nWhat the script does, per chapter:\n- adds 1 s of lead-in silence and 2 s of tail silence\n- normalises loudness in two passes to **−19 LUFS integrated, −3 dBTP** (ACX-style), mono 44.1 kHz\n- writes `audio/chNN.mp3`\n\nThen it concatenates everything into `audio/<Title>.m4b` (AAC) with chapter markers taken from the actual durations. Chapters are ordered by filename, so keep the `ch01`, `ch02`… zero-padding.\n\n## Verify before reporting done\n\n```bash\nffprobe -v error -show_chapters -of compact \"books/<slug>/audio/<Title>.m4b\"      # chapter count + titles\nffmpeg -nostats -i books/<slug>/audio/ch01.mp3 -af ebur128 -f null - 2>&1 | grep ' I:'   # ≈ -19 LUFS\n```\n\n## Export for the phone\n\nThe author listens in **BookPlayer** (iOS), importing from Google Drive. After verifying, copy only the `.m4b` (not the chapter MP3s, which BookPlayer would import as a duplicate book) to the project's export folder:\n\n```bash\nmkdir -p export/Audiobooks && cp \"books/<slug>/audio/<Title>.m4b\" export/Audiobooks/\n```\n\nThe author uploads `export/Audiobooks/` to Google Drive themselves; there is no Drive sync on this machine.\n\nThen publish to the website (m4b, chapter MP3s and a fresh EPUB): `site/publish.sh \"<slug>: new audio\"`.\n\nReport the total runtime, the number of chapters and the output paths. This is AI narration: if the user plans to publish on Audible/ACX or another storefront, remind them to check that store's current rules on AI-narrated audiobooks.\n"
+  },
+  {
+   "group": "personal",
+   "name": "failure-analysis-report",
+   "description": "Jonas's preferred data-analysis method for ML / data projects - record how a model fails, compute candidate signals, and produce a self-contained HTML report (gallery, heatmaps, run-up trajectories, AUC + partial-correlation feature signal, failure causes, onset). Use when analysing model behaviour, looking for new features, debugging failure modes, or when asked for an analysis/visualization of results.",
+   "plain": "Records how a model fails and turns it into one HTML report: gallery, heatmaps, run-up curves, which signals predict failure.",
+   "source": "written for your projects",
+   "pipeline": null,
+   "lines": 53,
+   "files": [
+    {
+     "path": "SKILL.md",
+     "lines": 53
+    }
+   ],
+   "skill_md": "---\nname: failure-analysis-report\ndescription: Jonas's preferred data-analysis method for ML / data projects - record how a model fails, compute candidate signals, and produce a self-contained HTML report (gallery, heatmaps, run-up trajectories, AUC + partial-correlation feature signal, failure causes, onset). Use when analysing model behaviour, looking for new features, debugging failure modes, or when asked for an analysis/visualization of results.\n---\n\n# Failure-analysis report\n\nThe user loved this method (Tetris project, Oct 2026: \"Game analysis:\nbaseline_single_v1\"). It found two features that took the model from ~1.8k to\n~400k lines. Use it by default for analysis in data and ML projects.\n\nReference implementation:\n`~/Code/games/tetris/tetris-heuristics-v2/experiments/{record_games,analyze_games}.py`\nand `docs/ANALYSIS_METHOD.md` there. Read them before building a new one.\n\n## Method\n\n1. **Record failures with context.** Per episode or sample: the final state, a\n   rolling window of the last N states before failure (long enough to show the\n   run-up), periodic mid-run snapshots as the \"normal\" baseline, and context at\n   failure. Use a seed or data split separate from train/val/test. Store as\n   `.jsonl.gz` (a header line, then one record per line).\n2. **Compute candidate signals** vectorised (numpy): the model's current inputs\n   plus ~10-15 hypotheses.\n3. **Report: one figure per plain-language question**, each with a caption:\n   1. What does failure look like? A gallery sorted by outcome.\n   2. Where does it happen? Heatmaps, normal vs failure.\n   3. What drifts before failure? Median + IQR band over the last N steps, with\n      a dashed normal level. Current inputs blue, candidates orange.\n   4. What predicts failure? The AUC of each signal for \"fails within K steps\",\n      with the model's own score as a reference line. Next to it, the **partial\n      correlation** with time-to-failure after regressing out the current\n      inputs. This shows *new* information.\n   5. What causes it? Trigger shares and context vs chance.\n   6. How does it start? The last healthy state, then +10 and +30 steps.\n4. **Summary table at the top** (mid-run median, median at failure, AUC, added\n   info, when it leaves its normal range). Also write `summary.json` with every\n   number.\n5. **Findings are leads.** Validate by implementing, retraining, and running a\n   paired comparison on held-out data with bootstrap CIs (≥ 50 runs).\n\n## Style\n\n- Follow the dataviz skill. Reference palette: surface `#fcfcfb`, ink\n  `#0b0b0b`/`#52514e`, grid `#e4e3df`, categorical `#2a78d6 #eb6834 #1baf7a\n  #eda100 #e87ba4 #008300 #4a3aa7 #e34948` (fixed order), a one-hue blue ramp\n  for magnitude.\n- matplotlib rcParams: recessive grid, no top/right spines, 2px lines, direct\n  value labels.\n- One self-contained static `report.html`: title \"<Topic> analysis: <model>\", a\n  subtitle with sample sizes and definitions, the table, then sections of\n  heading + caption + PNG. Write it to `results/<analysis>/<model>/`.\n- Open it for the user when done and summarise the 3-5 key findings in chat.\n"
+  },
+  {
+   "group": "personal",
+   "name": "kokoro-narrate",
+   "description": "Render a book's narration scripts to speech with Kokoro TTS running locally on CPU. Use when the user wants to narrate, voice, record or render audio for a book or chapter, audition or pick narrator/character voices, preview a sample, or re-render chapters after edits. Input is books/<slug>/audio/chNN.txt from narration-prep; output is audio/chNN.wav for audiobook-assemble.",
+   "plain": "Renders the script to speech locally with Kokoro (CPU), cached per paragraph.",
+   "source": "audiobook studio (symlink)",
+   "pipeline": 3,
+   "lines": 62,
+   "files": [
+    {
+     "path": "SKILL.md",
+     "lines": 62
+    },
+    {
+     "path": "scripts/narrate.py",
+     "lines": 165
+    }
+   ],
+   "skill_md": "---\nname: kokoro-narrate\ndescription: \"Render a book's narration scripts to speech with Kokoro TTS running locally on CPU. Use when the user wants to narrate, voice, record or render audio for a book or chapter, audition or pick narrator/character voices, preview a sample, or re-render chapters after edits. Input is books/<slug>/audio/chNN.txt from narration-prep; output is audio/chNN.wav for audiobook-assemble.\"\n---\n\n# Kokoro Narrate\n\n> From another project: run these commands through the **voice-text** skill's launcher (`voice.sh <command> voice/<slug>`); there `books/<slug>` = `voice/<slug>`.\n\nLocal, free TTS with Kokoro-82M (Apache-2.0). Runs on CPU at **~1.7× real time** on this laptop (i5-8250U): a 1,000-word chapter (~6 min of audio) takes ~3.5 min, a 15k-word book (~100 min of audio) about 1 h. So:\n\n- Always audition with `--sample` before a full render.\n- Run full renders with `run_in_background` and tell the user roughly how long it will take: about `words / 170` minutes of audio, rendered in roughly 60 % of that time.\n- Renders are **cached per paragraph**. After editing a script, re-run the same command and only the changed paragraphs get re-rendered.\n\nPython: `.venv/bin/python` at the project root (it has kokoro, soundfile and pyyaml). If the venv is missing: `python3 -m venv --system-site-packages .venv && .venv/bin/pip install kokoro soundfile pyyaml`. System package `espeak-ng` improves fallback pronunciation of unknown words. If `which espeak-ng` is empty, ask the user to run `! sudo apt install -y espeak-ng`.\n\n## Commands\n\n```bash\nPY=.venv/bin/python; N=.claude/skills/kokoro-narrate/scripts/narrate.py\n$PY $N --list-voices\n$PY $N --sample \"A paragraph from the book…\" --voice bm_george -o /tmp/…/sample.wav\n$PY $N books/<slug>                       # all chapters\n$PY $N books/<slug> --chapters ch03 ch04  # just these\n$PY $N books/<slug> --chapters ch01 --voice bf_emma   # audition: writes audio/ch01.bf_emma.wav, ignores book.yaml voice\n$PY $N --script training/03-dates.after.txt --speed 0.95 -o training/03-dates.after.wav   # one script file\n```\n\nFor a full-chapter audition, render the same chapter once per candidate voice, then convert each to MP3 so the user can listen:\n`ffmpeg -i audio/ch01.<voice>.wav -af loudnorm=I=-19:TP=-3 -ac 1 -b:a 96k audio/ch01.<voice>.mp3`.\nOnce the user has chosen a voice, set it in `book.yaml` and delete the `ch01.<voice>.*` audition files (ask first).\n\n## Voice config: `narration:` block in `books/<slug>/book.yaml`\n\n```yaml\nnarration:\n  narrator: af_heart       # house default (author's choice); one voice carries the book\n  speed: 1.0               # 0.9–1.0 suits fiction; drop to 0.95 for dense prose\n  paragraph_pause: 0.6     # seconds between paragraphs\n  characters:              # optional: dialogue lines tagged [[Name]] by narration-prep\n    Mira: bf_emma\n```\n\n**The voice's first letter sets the accent**: `a` = American, `b` = British. You can mix them; each accent gets its own pipeline. Good fantasy narrators: `bm_george` and `bm_fable` (British male), `bf_emma` (British female), `af_heart` (the highest-quality voice overall), `am_michael`. Stick to **2–3 character voices at most**. Constant voice switching gets jarring; most audiobooks use a single narrator.\n\nWhen auditioning, render the same 2–3 sentence passage (one with dialogue and a made-up name) in 3–4 candidate voices to the scratchpad. Tell the user the file paths so they can listen. Don't pick a voice for them.\n\n## Script format (what narrate.py reads)\n\nParagraphs are separated by blank lines, and line breaks inside a paragraph are joined.\n\n| Markup | Effect |\n|---|---|\n| plain paragraph | narrator voice |\n| `[[Mira]] \"Run,\" she said.` | the whole paragraph in Mira's voice (falls back to the narrator if Mira isn't mapped) |\n| `[pause 1.5]` alone on a line | that many seconds of silence |\n| `[Kaelith](/kˈIlɪθ/)` | phoneme override (Kokoro/misaki markup) |\n\n## After rendering\n\nCheck the console summary: minutes of audio per chapter, and about 150 words per minute. A chapter that's far shorter than its word count suggests means text was dropped (usually a markup error). Then hand off to **audiobook-assemble**.\n"
+  },
+  {
+   "group": "personal",
+   "name": "listen-check",
+   "description": "Automatic listener for rendered audiobook chapters: transcribes the audio with Whisper (locally, CPU) and compares it with the narration script to find skipped, swapped or garbled words and misheard names, flags paragraphs spoken unusually fast or slow, and finds short lines with no main stress. Use after kokoro-narrate, before audiobook-assemble, when the user asks to check, QA or proof-listen the audio, or wants to find audio problems without listening to everything.",
+   "plain": "Whisper listens to the audio and flags skipped, swapped or misheard words, odd pace and flat questions.",
+   "source": "audiobook studio (symlink)",
+   "pipeline": 4,
+   "lines": 61,
+   "files": [
+    {
+     "path": "SKILL.md",
+     "lines": 61
+    },
+    {
+     "path": "scripts/listen.py",
+     "lines": 357
+    }
+   ],
+   "skill_md": "---\nname: listen-check\ndescription: \"Automatic listener for rendered audiobook chapters: transcribes the audio with Whisper (locally, CPU) and compares it with the narration script to find skipped, swapped or garbled words and misheard names, flags paragraphs spoken unusually fast or slow, and finds short lines with no main stress. Use after kokoro-narrate, before audiobook-assemble, when the user asks to check, QA or proof-listen the audio, or wants to find audio problems without listening to everything.\"\n---\n\n# Listen Check\n\n> From another project: run these commands through the **voice-text** skill's launcher (`voice.sh <command> voice/<slug>`); there `books/<slug>` = `voice/<slug>`.\n\nA human can't re-listen to 90 minutes after every change. This skill does a first listen automatically, so the author only has to hear a short list of moments with timestamps.\n\n```bash\n.venv/bin/python .claude/skills/listen-check/scripts/listen.py books/<slug>                    # all chapters, ~6x real time\n.venv/bin/python .claude/skills/listen-check/scripts/listen.py books/<slug> --chapters ch03    # one chapter\n.venv/bin/python .claude/skills/listen-check/scripts/listen.py books/<slug> --reuse         # re-analyse stored transcripts (after tuning)\n```\n\nEach chapter gets `audio/chNN.listen.json`, which the website shows, plus a printed report.\n\n| Check | How | What it catches |\n|---|---|---|\n| **words** | Whisper (`base.en`) transcribes the chapter; the transcript is aligned word by word with `chNN.txt` | Kokoro skipping, swapping or garbling words; names written wrongly in the transcript |\n| **pace** | words per second for every paragraph, from the render cache | a paragraph > 30 % faster or slower than the chapter's median: rushed, dragged or garbled audio |\n| **stress** | Kokoro's own phonemes for bare short lines (no tag or beat), and for short quoted questions (≤ 3 words) even with a tag or beat | lines with no main stress, which end flat (training cases 01 and 05). Only dialogue lines are checked, so prose rarely gets any |\n\nFiltered out as Whisper noise:\n- **Numbers** written as digits (\"31\" for \"thirty-one\", \"50s\" for \"fifties\").\n- **Echoes**: a word repeated where Whisper's 30-second windows meet.\n- **Small words**: a dropped \"the\", \"a\" or \"and\".\n- **Spelling**: British vs American variants (grey/gray, centre/center).\n- **Sound-alikes**, compared by Kokoro's phonemes rather than by letters: won/one, route/root, pale/pail.\n\n**Names are compared by sound.** Whisper spells a name it doesn't know the way it sounds (\"Elin\" → \"Ellen\", \"Mira\" → \"mere\"). A name passes when what Whisper heard is closer to the glossary pronunciation than to Kokoro's own wrong default. That includes possessives like \"Mira's\".\n\n| Whisper wrote | Verdict | Why |\n|---|---|---|\n| mere, mirror (Mira) | pass | sounds like MEER-uh |\n| Ellen (Elin) | pass | sounds like EL-in |\n| Myra (Mira) | flag | that's Kokoro's default, MY-ruh |\n| Eline (Elin) | flag | that's the wrong ih-LIN |\n\n**Second opinion, built in.** Every word flag is re-checked automatically. The slower `small.en` model transcribes that paragraph's own clean audio from the render cache, and the flag is kept only if both models agree. Dismissed flags stay in the JSON under `dismissed`, for transparency.\n\n**Why there's no pitch check** (proposal evaluated 2026-10-19). The idea was to flag questions whose pitch doesn't rise at the end. Measured in af_heart: 26 lines rendered with `?` and with `.` end the same way, falling 3–5 semitones; in 25 of 26 the two differ by under 1 semitone, and whole contours match (\"Can I?\" `253 261 255 247 231…` Hz, \"Can I.\" `255 261 258 255 235…`). The case 01 markup `[X](+2)??` doesn't change the pitch either. 66 bare lines in the books' render cache show the same: questions fall like statements. So a rise detector would flag every question and tell good renders from bad ones no better than chance. What the author hears as better in cases 01 and 09 comes from stress and pauses, which the **stress** check and the case 09 script layout already cover. Re-measure if the narrator voice changes.\n\n**Limits.** Whisper prefers familiar words and spellings. If it writes \"Mira\" correctly, Kokoro said something close to \"Mira\", but not necessarily with the right stress. So a clean report means no gross errors, not perfect pronunciation. Names are still best checked by ear once, when the glossary is made (narration-prep).\n\n## Workflow\n\n1. Run it after `kokoro-narrate`, before `audiobook-assemble`.\n2. The report only contains flags both models agree on. Tell the author the remaining flags as **timestamps** to listen to, such as \"ch04 3:12: expected 'sequestered', heard 'sequenced'\". Don't claim a problem is real until it's confirmed by ear or by both models.\n3. **Every confirmed problem becomes a training case** (see `training/README.md`). Cut the clip automatically:\n   `listen.py books/<slug> --clip ch04 190 197 -o training/NN-slug.heard.wav`. Then fix it in the right skill: a pronunciation goes to narration-prep's glossary or rules, a phrasing problem to speech-flow.\n4. Re-render the paragraph, re-run the check on that chapter, then assemble and publish.\n\n## How the skills improve (shared loop)\n\n- **Author reports** → training case → before/after audio → the author picks → a rule in the right skill.\n- **listen-check reports** → confirmed by a second model or by ear → a training case the same way.\n- **Rule tests**: every lesson that the speech-flow scanner can detect has a test in `training/rule-tests.yaml`. Run `python3 .claude/skills/speech-flow/scripts/test_rules.py` after changing any rule. All tests must pass before publishing; the website shows the results.\n- **Rule proposals**: when two or more cases share a pattern that no rule covers yet, Claude drafts a rule, a scanner check and a test, and adds it to `training/proposals.md` with status `proposed`. It becomes a rule only when the author approves it. Taste (\"does this pause feel right?\") always stays with the author.\n"
+  },
+  {
+   "group": "personal",
+   "name": "ml-project-site",
+   "description": "Jonas's standard live website for ML / training projects on GitHub Pages - a Log (goal table, countdown, progress chart, journal + run events with replays), Curriculum, How it sees, The model, a Play tab (watch the newest models play a fixed, selectable set of games/episodes), Speed, Lessons and the Podcast tab - rebuilt and pushed every 15 minutes from the run files. Use it whenever an ML, RL, evolution or training project starts or needs a homepage, a progress page, a log site, replays, \"watch the model play\", a dashboard on GitHub Pages, or a film/video of the agent; also to update an existing project site to the newest version of this template.",
+   "plain": "A live GitHub Pages site for a training run: log, curriculum, replays, \"watch it play\", lessons, podcast; rebuilt every 15 min.",
+   "source": "written for your projects",
+   "pipeline": null,
+   "lines": 71,
+   "files": [
+    {
+     "path": "SKILL.md",
+     "lines": 71
+    },
+    {
+     "path": "scripts/init.sh",
+     "lines": 29
+    },
+    {
+     "path": "template/docs/app.js",
+     "lines": 81
+    },
+    {
+     "path": "template/docs/common.js",
+     "lines": 26
+    },
+    {
+     "path": "template/docs/curriculum.html",
+     "lines": 21
+    },
+    {
+     "path": "template/docs/curriculum.js",
+     "lines": 20
+    },
+    {
+     "path": "template/docs/index.html",
+     "lines": 40
+    },
+    {
+     "path": "template/docs/lessons.html",
+     "lines": 20
+    },
+    {
+     "path": "template/docs/model.html",
+     "lines": 19
+    },
+    {
+     "path": "template/docs/play.html",
+     "lines": 29
+    },
+    {
+     "path": "template/docs/play.js",
+     "lines": 30
+    },
+    {
+     "path": "template/docs/project.js",
+     "lines": 2
+    },
+    {
+     "path": "template/docs/senses.html",
+     "lines": 19
+    },
+    {
+     "path": "template/docs/speed.html",
+     "lines": 19
+    },
+    {
+     "path": "template/docs/style.css",
+     "lines": 96
+    },
+    {
+     "path": "template/publish.py",
+     "lines": 202
+    },
+    {
+     "path": "template/publish_loop.sh",
+     "lines": 9
+    },
+    {
+     "path": "template/site.json.example",
+     "lines": 18
+    },
+    {
+     "path": "template/site_hooks.example.py",
+     "lines": 39
+    }
+   ],
+   "skill_md": "---\nname: ml-project-site\ndescription: Jonas's standard live website for ML / training projects on GitHub Pages - a Log (goal table, countdown, progress chart, journal + run events with replays), Curriculum, How it sees, The model, a Play tab (watch the newest models play a fixed, selectable set of games/episodes), Speed, Lessons and the Podcast tab - rebuilt and pushed every 15 minutes from the run files. Use it whenever an ML, RL, evolution or training project starts or needs a homepage, a progress page, a log site, replays, \"watch the model play\", a dashboard on GitHub Pages, or a film/video of the agent; also to update an existing project site to the newest version of this template.\n---\n\n# ML project site\n\nThe site the user follows a project on, away from the laptop (first built for `~/code/games/lunarlander/lunarlander-98`,\nthe reference implementation: look there for a complete, working example of every hook and page). It pairs with the\n`project-podcast` skill (Podcast tab) and the `failure-analysis-report` skill (analysis reports can be linked from the log).\n\n## Set-up (once per project)\n\n1. `~/.claude/skills/ml-project-site/scripts/init.sh` in the project root. It copies the generic files (`publish.py`,\n   `publish_loop.sh`, `docs/*.js`, `docs/style.css`) and creates, only if missing, the project files: `site.json`,\n   `site_hooks.py`, the pages in `docs/`, `docs/project.js`, `experiments/journal.py`.\n2. Edit `site.json`: title, icon, repo, deadline, the goal (metric, target, extra columns), chart series (keys of\n   `stats.csv`), cards, names for baselines, the pattern that tells whether a run is alive.\n3. Implement `site_hooks.py` (see `template/site_hooks.example.py`): `replay_gif`, `models`, `games`, `render_play`,\n   optionally `extra`. Lander example: `lunarlander-98/site_hooks.py`.\n4. Write the `<!-- WRITE -->` parts of the pages: the hero on `index.html`, How it sees, The model, Speed, Lessons.\n   The user prefers too much explanation over too little: diagrams, examples, real numbers.\n5. Repo: **ask the user before creating a public repo**. Then `gh repo create … --public --source . --push`, and Pages from\n   `main:/docs`: `gh api -X POST repos/OWNER/NAME/pages -f \"source[branch]=main\" -f \"source[path]=/docs\"`.\n6. Start the loop: `setsid nohup ./publish_loop.sh > /dev/null 2>&1 < /dev/null &` (PID in `publish_loop.pid`).\n7. **Deployment counts only when** `gh api repos/OWNER/NAME/pages/builds/latest --jq '.status+\" \"+.commit'` says\n   `built <HEAD sha>` and the pages return HTTP 200 (`curl -s -o /dev/null -w \"%{http_code}\"`).\n8. Podcast tab: set up `project-podcast` (`podcast.conf`); its first publish creates `docs/podcast/index.html`.\n\nTo update a project to a newer version of this skill: `init.sh --update` (refreshes only the generic files).\n\n## The data conventions (what publish.py reads)\n\n| File | Content |\n|---|---|\n| `runs/<run>/stats.csv` | one row per iteration/generation; any columns; read with a CSV reader (stage names may contain commas) |\n| `runs/<run>/events.jsonl` | `{\"t\", \"kind\", ...}`: `run_start`, `stage_start` (+`expect`), `check_pass`, `stage_pass`, `goal_best` (+`check`, `champion`), `crash`, `override`, … An event with a `champion` path gets a replay GIF. |\n| `runs/<run>/curriculum.json` | `{\"note\", \"stages\": [{\"name\", \"world\", \"ramp\", \"reward\", \"pass\", \"cap\", \"expect\", …}]}`, written **before** a stage runs |\n| `experiments/journal.jsonl` | notes: `python experiments/journal.py \"title\" \"text\"` |\n| `results/goal_*.json`, `baseline_*.json`, `bake_*.json` | goal checks and comparisons: `n`, the metric, `ci` (Wilson), `label`, `note`, `policy` |\n\n## The Play tab\n\n`models()` lists ~4–6 models (the newest champions and the verified best), `games()` a **fixed** set of 8–16 varied\ngames (easy, hard, each kind of situation, each with a one-line description of what makes it different, e.g. \"boulder\n1.8 m left of the pad, low; strongest gust to the right\"). `publish.py` renders every model × game once as an MP4, caches\nit (`docs/play/<model>__<game>.mp4` + `.json` with the outcome) and deletes clips of models that left the list. The page\nlets the viewer pick a model and a game, shows the outcome badge on every game card, a \"next game\" button, and all\nmodels on the chosen game side by side. Keep the clips small: ~600×400, CRF 28, 25 fps.\n\n## Videos and replays: rules\n\n- **Never loop a clip.** MP4s have controls and no `loop`; GIF replays are saved without `loop=` so they play once and\n  stop on the outcome (the page replays a GIF on click). In films, never repeat the same footage to fill time: use\n  several different episodes in sequence, and hold the last frame if the narration runs longer.\n- Draw the hidden state the viewer needs (e.g. the true wind as an arrow next to the agent's own estimate) in a separate\n  drawing module that **no policy imports**.\n- Write the outcome on the final frame (landed / crashed / …) and the speed-up factor when a clip is sped up.\n- Films: narration via the `voice-text` skill (`--kind voiceover`, one `##` scene per chapter), visuals rendered per scene\n  from real episodes and real data, piped to ffmpeg, scenes concatenated (reference: `lunarlander-98/video/build_film.py`).\n  Link films from The model tab. Narration and rendering run with `nice` while training uses the CPU.\n\n## Rules learned the hard way\n\n- `publish.py --push` **never** runs `git pull --rebase --autostash` (it once silently reverted an hour of uncommitted\n  code). It pushes; only on rejection it merges (`--no-rebase`) and pushes again.\n- Pages are cached for ~10 minutes: `bust_caches()` versions every script and stylesheet URL by content hash.\n- The chart's y-axis autoscales and chart boxes have a fixed height (`.chartbox .h`), so they never grow.\n- A replay or clip that fails to render must never stop the publisher (try/except, logged).\n- Every number on the site comes from a file; \"best check\" cards say that a best-of-many flatters (winner's curse).\n- Render with `nice -n 15`, and keep the number of rendered clips bounded (models × games).\n"
+  },
+  {
+   "group": "personal",
+   "name": "narration-prep",
+   "description": "Convert finished manuscript chapters into TTS-ready narration scripts for Kokoro: strip markdown, spell out numbers and symbols, apply glossary pronunciations as phoneme markup, add scene-break pauses and optional character-voice tags. Use when preparing a book or chapter for audio, fixing mispronounced names, building the pronunciation glossary, or before running kokoro-narrate.",
+   "plain": "Turns a chapter into a Kokoro script: strips markdown, spells numbers, applies name pronunciations.",
+   "source": "audiobook studio (symlink)",
+   "pipeline": 2,
+   "lines": 63,
+   "files": [
+    {
+     "path": "SKILL.md",
+     "lines": 63
+    },
+    {
+     "path": "scripts/g2p.py",
+     "lines": 39
+    },
+    {
+     "path": "scripts/prep.py",
+     "lines": 115
+    }
+   ],
+   "skill_md": "---\nname: narration-prep\ndescription: \"Convert finished manuscript chapters into TTS-ready narration scripts for Kokoro: strip markdown, spell out numbers and symbols, apply glossary pronunciations as phoneme markup, add scene-break pauses and optional character-voice tags. Use when preparing a book or chapter for audio, fixing mispronounced names, building the pronunciation glossary, or before running kokoro-narrate.\"\n---\n\n# Narration Prep\n\n> From another project: run these commands through the **voice-text** skill's launcher (`voice.sh <command> voice/<slug>`); there `books/<slug>` = `voice/<slug>`.\n\nTurns `books/<slug>/chNN.md` into `books/<slug>/audio/chNN.txt` (format: see the `kokoro-narrate` skill). You do this conversion yourself, reading and writing the files. The manuscript is never modified; it stays the source of truth. If a chapter is edited later, regenerate its script; unchanged paragraphs stay cached and won't re-render.\n\n## 1. Pronunciation glossary first\n\n`books/<slug>/glossary.md` lists every invented name and word. Kokoro mangles many of them. For example \"Ys'tharra\" → /hˈaɹə/, which drops the first syllable: apostrophes and unusual vowel clusters are the worst. For each glossary entry:\n\n```bash\n.venv/bin/python .claude/skills/narration-prep/scripts/g2p.py \"Ys'tharra\" \"Is tharra\" \"Iss THAR uh\"\n```\n\nUse `--say \"…\"` to render `say.wav` so the user can hear it.\n\n1. Pick the respelling that matches the author's \"sounds like\" note.\n2. Join it into one word: remove the spaces and extra stress marks, keeping a single primary `ˈ` before the stressed syllable.\n3. Record it in the glossary table:\n\n```markdown\n| Term | Sounds like | Phonemes | Notes |\n|------|-------------|----------|-------|\n| Ys'tharra | iss-THAR-uh | ɪsθˈɑːɹə | the river goddess |\n```\n\nIf the author never gave a \"sounds like\", ask the author. Don't invent one. Names that Kokoro already says correctly get the phonemes column filled with `ok` and no markup.\n\n## 2. Convert each chapter\n\nThe mechanical rules below are implemented in `scripts/prep.py` (`.venv/bin/python .claude/skills/narration-prep/scripts/prep.py books/<slug>`). Run it, then read the diff of each script and handle what it can't: italics that carry meaning, numbers that need context, anything the author flagged.\n\nRules, in order:\n\n1. **Heading** → spoken title paragraph: `Chapter Three. The Drowned Bell.` followed by `[pause 1.0]`.\n2. **Strip markdown**: `*italics*`/`**bold**` markers, links, HTML, footnotes. If italics carry meaning (telepathy, a letter, a foreign word), make that clear in words or leave a note for the author; the voice can't do italics.\n3. **Scene breaks** (`***`, `* * *`, `#`, `---`) → `[pause 1.5]`.\n4. **Numbers and symbols** → words: \"1,204\" → \"twelve hundred and four\", \"3rd\" → \"third\", \"&\" → \"and\", \"—\" stays (Kokoro pauses on it), \"…\" → \"...\".\n5. **Abbreviations** → spoken forms: \"Mr.\" → \"Mister\", \"St.\" → \"Saint\" or \"Street\" depending on context.\n6. **Glossary names** → wrap **every** occurrence, including possessives, in markup: `[Ys'tharra](/ɪsθˈɑːɹə/)`. For a possessive, put the markup on the name and keep the 's outside: `[Ys'tharra](/ɪsθˈɑːɹə/)'s`.\n7. **Long paragraphs** (> ~120 words): split at a natural sentence boundary. This keeps the per-paragraph cache granular.\n8. **Character voices**: only if `narration.characters` in `book.yaml` maps characters. Tag a paragraph `[[Name]]` only when it is **pure dialogue** by that character. If a paragraph mixes narration and speech (\"Run,\" Mira said, grabbing his arm), leave it with the narrator; splitting mid-sentence sounds choppy.\n\n## 3. Check\n\n- Grep each script for leftover `*`, `#`, `_`, digits and `[` without a matching `](/`.\n- Word count of script ≈ word count of the chapter (± 5 %).\n- Hand off to **kokoro-narrate**. Suggest a `--sample` of the most name-dense paragraph first.\n\n## Learned rules\n\nRules learned from the author's examples in `training/` (see `training/README.md` and `training/cases.md`). They take precedence over the general rules above. When the author reports something that sounds wrong:\n1. Save the original text as `training/NN-slug.md` with a note on what sounded wrong and the book/chapter it came from.\n2. Write `NN-slug.before.txt` with the current rules and render it; write `NN-slug.after.txt` with the fix and render it (`narrate.py --script … --speed 0.95`). Try several variants if the first fix doesn't sound right.\n3. When the author approves, add the rule below, mark the case `fixed` in `cases.md`, and re-check every earlier case's `.after.txt` still follows all the rules.\n\n- **Short questions (case 01).** A quoted question of three words or fewer often gets no main stress from Kokoro (check with `g2p.py`: only `ˌ` marks, no `ˈ`), so it ends flat and sounds cut off. This holds whether the line stands alone or has a tag or beat: `\"Why?\" It came out sharper…` is still `wˌI?`, because the context doesn't change the question's stress. Put `(+2)` on the word the speaker leans on and double the question mark: `\"[Can](+2) I??\" He sat up a little.` (`prep.py` does this for the last sentence of any quote; it skips trailing-off `...?` questions and questions containing a glossary name). A beat after the line still helps, since it gives the listener the feeling, but it doesn't replace the markup.\n- **Short question before a beat (case 09).** When a marked short question opens a paragraph and an action beat follows, put the question in its own script paragraph and the beat in the next one: `\"[Why](+2)??\"` / `It came out sharper than she meant.` Voiced alone, it ends more like a question than the same markup inside the paragraph. A tag (`\"[How](+2)??\" said Quill.`) stays in place. `prep.py` does this; the manuscript is unchanged.\n"
+  },
+  {
+   "group": "personal",
+   "name": "project-podcast",
+   "description": "Write, voice and deploy a short spoken podcast episode about a project's progress to the project's GitHub Pages site (a \"Podcast\" tab with audio, show notes and a transcript). Use it whenever something significant happens in a long-running project (a breakthrough, a stage or goal passed, a new best result, a new kind of experiment, a clear failure or a correction of an earlier claim), or whenever the user asks for a podcast, an audio update, an episode, a spoken summary of progress, or to publish/deploy an episode, even if they don't say \"podcast\". It covers gathering the facts, writing for the ear, the voice-text pipeline (Kokoro + Whisper check), the feed, commit/push and verifying the GitHub Pages deployment.",
+   "plain": "Writes, voices, checks and publishes a short spoken progress episode to the project site.",
+   "source": "written for your projects",
+   "pipeline": null,
+   "lines": 80,
+   "files": [
+    {
+     "path": "SKILL.md",
+     "lines": 80
+    },
+    {
+     "path": "assets/index.html",
+     "lines": 49
+    },
+    {
+     "path": "assets/podcast.conf.example",
+     "lines": 6
+    },
+    {
+     "path": "scripts/conf.sh",
+     "lines": 9
+    },
+    {
+     "path": "scripts/make_feed.py",
+     "lines": 27
+    },
+    {
+     "path": "scripts/prepare.sh",
+     "lines": 19
+    },
+    {
+     "path": "scripts/publish.sh",
+     "lines": 57
+    }
+   ],
+   "skill_md": "---\nname: project-podcast\ndescription: Write, voice and deploy a short spoken podcast episode about a project's progress to the project's GitHub Pages site (a \"Podcast\" tab with audio, show notes and a transcript). Use it whenever something significant happens in a long-running project (a breakthrough, a stage or goal passed, a new best result, a new kind of experiment, a clear failure or a correction of an earlier claim), or whenever the user asks for a podcast, an audio update, an episode, a spoken summary of progress, or to publish/deploy an episode, even if they don't say \"podcast\". It covers gathering the facts, writing for the ear, the voice-text pipeline (Kokoro + Whisper check), the feed, commit/push and verifying the GitHub Pages deployment.\n---\n\n# Project podcast: write → voice → deploy\n\nEach episode is a short spoken update (2-6 minutes) for a user who follows the project by ear, often away\nfrom the laptop. Its value is that it's **true, current and easy to follow**: real numbers from the logs, in\nplain spoken language, covering what happened, what worked, what failed and what's next. It was first built for the\nBipedal CMA-ES project (`~/code/games/bi-pedal/bipedal-CMA-ES`, seven episodes; see its `METHOD.md`).\n\n## Set-up (once per project)\n\n1. GitHub Pages must serve `main:/docs` (`gh api repos/OWNER/NAME/pages` answers).\n2. Copy `assets/podcast.conf.example` to `<project>/podcast.conf` and fill in `REPO` and `SITE` (optional:\n   `GLOSSARY`, a voice-text glossary of the project's jargon; `TESTS`, a command to run before committing).\n3. Link the tab from the site's navigation to `podcast/index.html`. The first publish copies a standalone\n   page (`assets/index.html`) to `docs/podcast/index.html` if there isn't one. Restyle it to match the site if you like.\n4. The voice-text skill (`~/.claude/skills/voice-text/`) does the audio work and must be set up.\n\nFiles in the project: `podcast/episode-NN.md` + `podcast/episode-NN.notes.json` (sources),\n`docs/podcast/episode-NN.mp3`, `docs/data/podcast.json` (feed), `voice/podcast-NN/` (work dir; add\n`voice/*/audio/` and the WAV cache to `.gitignore`, as voice-text's `voice/.gitignore` does).\n\n## When to make one\n\nMake one as soon as a major change or breakthrough happens, not on a schedule: a stage passing, the goal met or a\nnew best, a new kind of experiment (model, reward, curriculum), an experiment that clearly failed (and why), or\na correction. One episode can cover several events. No daily cap. Skip routine \"still training\" check-ins.\n\n## 1. Gather the facts (only real numbers)\n\nFind what's new since the last episode: the newest `podcast/episode-NN.md`, and then the project's journal, its\ntraining log, its attempts/experiments list and its evaluation results after that date. Every number must come\nfrom those files or from a command you just ran. If a number is uncertain (selected on few test cases, not yet\nverified on a fresh set), say so. Selection luck (the winner's curse) is a common reason for a later correction.\n\n## 2. Write the episode\n\n`podcast/episode-NN.md` (next number, two digits) and `podcast/episode-NN.notes.json`.\n\n- First line `# Episode NN: <short title>`, then 300-700 words of prose in the first person (\"I\"), addressed to the\n  listener (\"you asked for…\").\n- Write for the ear: short sentences with one idea each; numbers as they're said (\"two hundred and eighty four\",\n  \"about ninety\", \"one and a half times\"); no tables, lists, symbols, parentheses, URLs, or abbreviations a\n  listener can't decode. Name runs by what they are (\"the wider network\"), not by ids.\n- Structure: where we were → what happened → what worked → what failed and why → what's next. Be honest\n  about failures and uncertainty. That's what makes the updates trustworthy.\n- `notes.json`: a JSON list of 3-5 one-line show notes (digits are fine here).\n\n## 3. Prepare (speech-flow scan)\n\n```bash\n~/.claude/skills/project-podcast/scripts/prepare.sh NN      # run from anywhere inside the project\n```\nThis builds `voice/podcast-NN/` (voice-text, kind prose, plus the glossary) and runs the scan. On exit 2, fix the phrasing\n**in `podcast/episode-NN.md`** (split long sentences, drop semicolons) and run it again. It rebuilds from the source.\n\n## 4. Narrate, check and deploy (background)\n\n```bash\nsetsid nohup ~/.claude/skills/project-podcast/scripts/publish.sh NN > podcast/publish_NN.log 2>&1 &\n```\nIt preps the script, narrates (Kokoro, af_heart, `nice`), runs the Whisper listen-check, exports, copies the MP3, rebuilds the feed,\nruns `TESTS`, commits only the episode files, pushes, waits for the Pages build of that commit, checks HTTP 200\nfor the page, the MP3 and the feed, and retries until the feed lists the episode (CDN lag). Narration takes several\nminutes per minute of audio while training is using the CPU. Follow it with `tail podcast/publish_NN.log`; it\nends with `DEPLOYED <url>` or `FAILED: <reason>`.\n\n## 5. Report\n\nGive the title, the length, the listen-check result and the link. Flags like \"a\" heard as \"one\", or \"sixteen\" heard as\n\"one thousand six\", are Whisper writing numbers differently, not narration errors. A skipped or garbled word\nmeans: fix the text and publish again with the same number (it overwrites).\n\n## Notes\n\n- Never edit a script that a background job is running. The podcast scripts don't touch training.\n- When something sounds wrong, the lesson goes back to the voice-text studio (see the voice-text skill §4).\n"
+  },
+  {
+   "group": "personal",
+   "name": "speech-flow",
+   "description": "Check a manuscript chapter for punctuation and sentence shapes that trip a TTS narrator or a listener: misplaced commas, dashes that never close, italics that vanish in audio, bare short questions, run-on sentences, pronouns pointing too far back, contradictions. Use before narration-prep, when the author says a passage sounds wrong or doesn't flow, or asks for a read-aloud / punctuation / flow check on a chapter or book.",
+   "plain": "Finds punctuation and sentence shapes that trip a listener or the TTS voice, and proposes ear-friendly rewrites.",
+   "source": "audiobook studio (symlink)",
+   "pipeline": 1,
+   "lines": 85,
+   "files": [
+    {
+     "path": "SKILL.md",
+     "lines": 85
+    },
+    {
+     "path": "scripts/scan.py",
+     "lines": 170
+    },
+    {
+     "path": "scripts/test_rules.py",
+     "lines": 46
+    }
+   ],
+   "skill_md": "---\nname: speech-flow\ndescription: \"Check a manuscript chapter for punctuation and sentence shapes that trip a TTS narrator or a listener: misplaced commas, dashes that never close, italics that vanish in audio, bare short questions, run-on sentences, pronouns pointing too far back, contradictions. Use before narration-prep, when the author says a passage sounds wrong or doesn't flow, or asks for a read-aloud / punctuation / flow check on a chapter or book.\"\n---\n\n# Speech Flow\n\n> From another project: run these commands through the **voice-text** skill's launcher (`voice.sh <command> voice/<slug>`); there `books/<slug>` = `voice/<slug>`.\n\nA listener can't see punctuation, re-read a sentence or notice italics. Kokoro pauses on every comma and dash and reads a sentence's pitch from its punctuation. This skill finds the spots where the written text and the heard text come apart, and fixes them **in the manuscript** (`books/<slug>/chNN.md`), so every later render benefits.\n\nPipeline position: after editing, **before** `narration-prep`. Narration-prep then only does mechanical conversion.\n\n## 1. Mechanical scan\n\n```bash\npython3 .claude/skills/speech-flow/scripts/scan.py books/<slug>/ch01.md   # several chapters OK\n```\n\nIt prints candidates by paragraph number (¶, heading excluded). They are only candidates. Dismiss any that read fine aloud, such as a deliberate rhythm or an appositive dash tail (\"— dark wood, a cushion…\").\n\n| Check | Why it matters by ear |\n|---|---|\n| italics-without-cue | Italic thoughts, stamps and voices become plain narration. \"hear it as *I know, love*\" is heard as \"as I know\". Fix it with a cue in words: \"hear it say: …\", \"the stamp read: …\". |\n| comma-before-and | \"She looked up at him, and allowed…\": one subject with two verbs shouldn't take a comma, and Kokoro pauses on it in the wrong place. |\n| bare short line | A line of dialogue of six words or fewer, alone in its paragraph with no tag or beat. The listener hears the words but not the feeling, and a short question ends flat (cases 01, 05). Add an **emotion beat**, see below. |\n| clipped exchange / clipped-dialogue share | A *clipped* line is speech whose every sentence is three words or fewer (\"Yes.\", \"Why?\", \"I know.\"). One lands hard. Two in a row, or more than ~15% of a chapter's spoken lines, reads as lazy writing (case 07). See **Clipped dialogue** below. |\n| unclosed-dash | A dash opens an aside, then a new clause runs on. The listener loses the main thread. Close it, or split the sentence. |\n| long-sentence (> 35 words) | Hard to follow by ear. Split it where the subject changes. |\n| comma-run (≥ 6 commas) | Too many pauses in a row sounds choppy. Keep the run only if the choppiness is intended. |\n| semicolon | Kokoro reads it as a comma, so the clauses blur together. Use a full stop instead. |\n| interrupter-without-commas | \"had by all accounts been\": the voice has nowhere to breathe. Put commas around the interrupter. |\n| so…that without a breath | \"spent so much of their lives arguing about who they were that by the time…\": a long *so … that* runs the cause into the result. Put a comma before *that*. The pause matters more here than the grammar rule (case 03). |\n| hedge boxed in commas | \"not softness, exactly, but attention\": three tiny pauses break the contrast apart. Drop the commas around the one-word hedge so the only pause comes before *but*: \"not softness exactly, but attention\" (case 04). |\n\n**Commas are pauses here, not grammar.** Add a comma where a listener needs a breath (a multi-word interrupter, the turn of a long *so … that*). Remove one where it only chops the rhythm (a one-word hedge, a comma that splits one subject's two verbs). If the two rules seem to conflict, read the sentence aloud and keep the version where the pauses fall on the meaning.\n\n### Emotion beats for short lines (case 05)\n\n*Fiction only (`kind: fiction`, the default). The scanner skips this check for `kind: prose` and `voiceover`.*\n\nThe author's rule: when a line is only one or two short sentences, like `\"Can I?\"`, follow it with a beat that shows the emotion behind it.\n\n```\n\"You want to appeal it?\"\n\"Can I?\" He sat up a little.          <- hope, shown by the body\n```\n\n- **Show it through a small physical action**, in under about eight words: *He sat up a little. / She didn't look up. / His hand stopped on the latch.* Avoid adverb tags like \"he said hopefully\" and named emotions like \"he felt hopeful\". They tell instead of show, and they sound flat when spoken.\n- **Fit the moment.** The beat should carry what the line can't: hope, dread, defiance, relief. If the emotion is already obvious from the line before, a plain tag (\"she said\") is enough.\n- **Is it short on purpose?** If the line is filler, rewrite it instead of beating it (see *Clipped dialogue*, case 07). A beat doesn't make \"Yes.\" any less lazy.\n- **Pace it.** In a fast back-and-forth, beat about every second or third line (the same rhythm as the dialogue-attribution rule in `writing-for-the-ear.md`). Don't beat every line, or the exchange loses its speed.\n- **Skip it** for lines that aren't speech: letters, sign-offs, stamps, signs.\n\n### Clipped dialogue (case 07)\n\n*Fiction only, like emotion beats.*\n\nThe author's rule: two- and three-word lines are fine *sometimes*. Used often, they feel lazy, as if the characters had nothing to say. Before adding an emotion beat to a short line, ask whether it should be short at all.\n\n**Keep it short** when the shortness *is* the point: a decision or a confession (\"It was you.\" / \"Yes.\"), an interruption, someone under pressure or refusing to talk, a punchline, or a character whose voice is terse (then the others around them shouldn't be).\n\n**Rewrite it** when it is filler: a bare \"Yes.\" / \"No.\" / \"Why?\" / \"I know.\" that only moves the scene along, echo questions (\"A wall?\"), and ping-pong question and answer that just hands over information. Options, in order of preference:\n- **Say what they'd really say.** Give the reply a reason, a condition, a deflection or a detail only this character would add: \"Yes.\" → \"Yes. I signed for her myself.\" / \"Why?\" → \"Why would they want a chair back?\"\n- **Fold the exchange into narration.** \"She said yes, and didn't ask why.\" Three lines become one sentence and the scene moves faster.\n- **Merge the beat into the line**, so it stops being a lone fragment: \"No,\" Mira said, and kept her hand on the file.\n\n**Budget:** about one clipped line in seven, and no two in a row unless the scene is meant to snap. The scanner's `clipped-dialogue share` lists every clipped ¶ in the chapter. Pick the weakest ones until the chapter is under budget; don't rewrite the ones that earn their place.\n\n## 2. Listening read-through (the script can't do this)\n\nRead the whole chapter as a listener hearing it once, at narration speed. Look for:\n- **Far referents**: \"it\", \"any\", \"that\", \"them\" pointing more than a sentence back, or across dialogue. Repeat the noun instead.\n- **Contradictions that print hides**, for example \"None of them ever did, mostly\".\n- **Garden paths**: a sentence that parses one way until its last words, as in \"hear it as I know…\".\n- **Who is speaking**, using the dialogue rules in `fantasy-novella/references/writing-for-the-ear.md`.\n- **Lost emphasis**: a line whose meaning depends on italic stress. Most spoken emphasis (\"A *teapot.*\") survives without it. Fix a line only when it doesn't.\n\n## 3. Report, then fix\n\n1. Give the author a table: ¶, what's wrong as heard, the current text, and the proposed rewrite. Order it by severity: misheard meaning first, then wrong pauses, then polish. Keep rewrites minimal and in the book's voice. This is punctuation and phrasing, not a line edit.\n2. Apply only the fixes the author approves to `chNN.md`. Copy the old version to the scratchpad first.\n3. Re-run `narration-prep` on the chapter, then `kokoro-narrate`. Only the changed paragraphs re-render.\n4. **Test**: add a before/after pair to `training/rule-tests.yaml` for any new scanner check, then run `python3 .claude/skills/speech-flow/scripts/test_rules.py`. All tests must pass.\n5. **Training**: save each fix that taught something new as a case in `training/` (see `training/README.md`). Include before and after audio of the affected paragraphs. Add any recurring pattern to the check table above. If it can be detected mechanically, add it to `scan.py` as well.\n"
+  },
+  {
+   "group": "personal",
+   "name": "voice-text",
+   "description": "Turn any text into checked narration from any project: a doc, article, README, notes, story chapters or a video voiceover script. Rewrites it for the ear (speech-flow), renders it locally with Kokoro (af_heart), has Whisper listen back for skipped or garbled words and misheard names, and exports MP3/.m4b (or per-scene MP3s with timings for a video). Use when the user wants to voice, narrate, read aloud, make audio or a voiceover of a text, or turn a file into an MP3 or audiobook, outside the audiobook studio's own books.",
+   "plain": "The front door to the audio pipeline: turns any text (doc, notes, video script) into checked narration.",
+   "source": "audiobook studio (symlink)",
+   "pipeline": null,
+   "lines": 67,
+   "files": [
+    {
+     "path": "SKILL.md",
+     "lines": 67
+    },
+    {
+     "path": "scripts/voice.py",
+     "lines": 236
+    },
+    {
+     "path": "scripts/voice.sh",
+     "lines": 11
+    }
+   ],
+   "skill_md": "---\nname: voice-text\ndescription: \"Turn any text into checked narration from any project: a doc, article, README, notes, story chapters or a video voiceover script. Rewrites it for the ear (speech-flow), renders it locally with Kokoro (af_heart), has Whisper listen back for skipped or garbled words and misheard names, and exports MP3/.m4b (or per-scene MP3s with timings for a video). Use when the user wants to voice, narrate, read aloud, make audio or a voiceover of a text, or turn a file into an MP3 or audiobook, outside the audiobook studio's own books.\"\n---\n\n# Voice Text\n\nThe studio's audio pipeline (from `fantasy-audiobook-studio`), for text that lives in another project. The stage skills do the work; this one sets up a work dir they understand, gives the commands a path that works from anywhere, and says what changes for prose and voiceovers.\n\n**Every command** runs through the launcher, which uses the studio's Python and scripts:\n\n```bash\nV=~/.claude/skills/voice-text/scripts/voice.sh\n```\n\nThe stage skills (speech-flow, narration-prep, kokoro-narrate, listen-check, audiobook-assemble) show commands like `.venv/bin/python .claude/skills/<skill>/scripts/x.py books/<slug>`. From another project, translate them: `$V <command> voice/<slug>`, where `books/<slug>` = `voice/<slug>`. Inside the studio repo, use its own commands as they are.\n\n## 1. Make the work dir\n\n```bash\n$V new docs/intro.md --kind prose                 # one doc -> voice/<slug>/ch01.md\n$V new docs/guide.md --kind prose --split         # a long doc (> 3k words): one chapter per ## section\n$V new story/ch*.md --kind fiction --slug my-tale # chapters, copied as written\n$V new video/script.md --kind voiceover           # one chapter per ## scene; scene titles aren't spoken\n```\n\n`voice/<slug>/` looks like a book folder: `chNN.md`, `book.yaml` (`kind`, voice af_heart, speed, chapter titles, `sources:` = original file + sha1 per chapter), `glossary.md`, `audio/`. `voice/.gitignore` keeps WAVs and the render cache out of git. Re-running `new` on the same slug refuses, because the work dir may hold approved rewrites. `--force` rebuilds the chapters from the sources but keeps the glossary and voice settings.\n\nFor prose and voiceover, `new` turns the markdown into plain paragraphs and prints a `rewrite:` line for each thing a listener can't use: dropped code blocks and tables, lists, bare URLs. Handle those in step 2.\n\n| kind | for | differences |\n|---|---|---|\n| `fiction` | stories, chapters | everything as in the studio, dialogue rules included |\n| `prose` | docs, articles, notes, READMEs | no dialogue checks (bare short line, clipped dialogue). Speed 0.95 |\n| `voiceover` | narration over a video or slides | as prose, plus speed 1.05, and export writes unpadded per-scene MP3s and `timings.json` |\n\n## 2. Rewrite for the ear (speech-flow)\n\n```bash\n$V scan voice/<slug>\n```\n\nThen follow the **speech-flow** skill: the scan candidates plus the listening read-through, a report table, and fixes only once the user approves them. For prose, also rewrite what `new` listed: say in a sentence what a table or code block shows (or leave it out), name a site instead of reading its URL, give a list a lead-in sentence so it doesn't arrive as fragments, and spell out abbreviations that look odd aloud (e.g. → for example, CLI → command line).\n\n**The fixes go into the work dir copy** (`voice/<slug>/chNN.md`), never silently into the user's file. A doc written for the eye often has good reasons for its tables and parentheses. Once the fixes are approved, offer to copy them back to the original (the `sources:` path in book.yaml). For fiction, recommend doing so: the manuscript should stay the source of truth. If `sources:` shows a sha1 that no longer matches the original, the original changed after `new`. Tell the user, and rebuild with `--force` only after their ear rewrites are copied back or written down.\n\n## 3. Names, script, render, listen, export\n\n1. **Glossary**: list the invented or unusual names (people, products, places, jargon) in `glossary.md` and check each one with `$V g2p \"Name\" \"respelling\"`, as in **narration-prep** §1. Ask how a name should sound; don't guess. For a product name with a standard pronunciation, ask the user or mark it `ok` if Kokoro already gets it right.\n2. `$V prep voice/<slug>`, then review the scripts as in narration-prep §3. The learned rules (short questions, case 01 and 09) apply here too.\n3. `$V narrate voice/<slug> --sample \"<the most name-dense paragraph>\" -o <scratchpad>/sample.wav` first, then `$V narrate voice/<slug>`. Run it in the background when there's more than ~1,000 words: ~1.7× real time, about `words / 150` minutes of audio. Voice: **af_heart** unless the user asks for another (**kokoro-narrate** covers auditions).\n4. `$V listen voice/<slug>`, and report the flags as timestamps, as in **listen-check**.\n5. `$V export voice/<slug>`, which gives `audio/chNN.mp3` (−19 LUFS) and a `.m4b`. For a voiceover it also gives `audio/voiceover/chNN.mp3` (no lead-in or tail) and `timings.json`, with each scene's length in seconds for the video edit.\n6. `$V status voice/<slug>` checks every audio stage against the evidence log (`pipeline.log.jsonl`). Report its table. Exit 0 means done.\n\n## 4. Lessons go back to the studio\n\nThere's one set of rules for every project. When the user says something sounds wrong, or listen-check confirms a problem, make a training case **in the studio**, `~/.claude/skills/voice-text/../../../training/` (see its README.md). Include in the note which project and file it came from. Put the rule in the stage skill it belongs to, and run `$V test-rules`, which must pass. Then tell the user the studio repo has uncommitted lesson changes: they commit and publish there (`site/publish.sh`). Don't commit in the studio from another project.\n\n## Set-up (once per machine)\n\n```bash\nS=~/code/other/fantasy-audiobook-studio/.claude/skills   # the studio checkout\nfor s in voice-text speech-flow narration-prep kokoro-narrate listen-check audiobook-assemble; do ln -sfn \"$S/$s\" ~/.claude/skills/$s; done\n```\n\nThe studio needs its `.venv` (see `site/starter/SETUP.md`); the launcher says so if it's missing. Scripts follow the symlinks back to the studio, so evidence logging, the render cache format and the rule tests are the same everywhere.\n"
+  },
+  {
+   "group": "personal",
+   "name": "deploy (deploy.md)",
+   "description": "Deploy storahultsvm.se — rsync code to DigitalOcean and restart Docker",
+   "plain": "rsync + docker restart for the World Cup tips site. NOT loaded: it is a loose file, not deploy/SKILL.md.",
+   "source": "loose file: not loaded",
+   "broken": true,
+   "lines": 23,
+   "files": [],
+   "skill_md": ""
+  },
+  {
+   "group": "studio",
+   "name": "avoid-ai-writing",
+   "description": "Audit and rewrite content to remove AI writing patterns (\"AI-isms\"). Use this skill when asked to \"remove AI-isms,\" \"clean up AI writing,\" \"edit writing for AI patterns,\" \"audit writing for AI tells,\" or \"make this sound less like AI.\" Supports a detection-only mode that flags patterns without rewriting.",
+   "source": "only inside fantasy-audiobook-studio (project skill)",
+   "lines": 492
+  },
+  {
+   "group": "studio",
+   "name": "character-archetypes",
+   "description": "Use when identifying, auditing, or tracking character archetypes in fiction. Trigger on: 'character archetype', 'archetype audit', 'what archetype is this character', 'archetype conformance', 'Hero's Journey character role', 'Jungian archetype', or archetype-based character analysis.",
+   "source": "only inside fantasy-audiobook-studio (project skill)",
+   "lines": 127
+  },
+  {
+   "group": "studio",
+   "name": "fantasy-novella",
+   "description": "Plan and draft a short fantasy novel / novella (10–20k words) destined for audiobook, from idea to finished manuscript. Use when the user wants to start a new book, write a fantasy story, build a fantasy world or magic system, outline or draft chapters, check progress, or asks 'what's next' on a book in books/. Orchestrates world-rules and the vendored author-toolkit skills (fiction-workshop, story-structure, character-archetypes, prose-mechanics, avoid-ai-writing) and hands off to the audio pipeline.",
+   "source": "only inside fantasy-audiobook-studio (project skill)",
+   "lines": 115
+  },
+  {
+   "group": "studio",
+   "name": "fiction-workshop",
+   "description": "Use when writing or editing novels, short stories, or any fiction manuscript. Trigger on: 'write fiction', 'edit my novel', 'developmental edit', 'line edit', 'character voice', 'plot hole', 'brainstorm', or fiction writing tasks.",
+   "source": "only inside fantasy-audiobook-studio (project skill)",
+   "lines": 291
+  },
+  {
+   "group": "studio",
+   "name": "manuscript-review",
+   "description": "Review-and-rewrite loop for a book's chapters: an independent reviewer (fresh subagent that never edits) finds issues, the writer fixes them, an objective gate checks word count, clipped dialogue and how much changed, and the loop stops when the gate passes and no must-fix issue is open, or at a hard cap of 3 rounds. Brakes keep it from rewriting the story: locked outline, an issue ledger, a change budget per round. Use after drafting each chapter (fantasy-novella stage 3), for the whole-book loop (stages 4–5), or when the author asks to review, critique, tighten, polish or loop on a chapter.",
+   "source": "only inside fantasy-audiobook-studio (project skill)",
+   "lines": 154
+  },
+  {
+   "group": "studio",
+   "name": "prose-mechanics",
+   "description": "Use when auditing prose at the sentence level on stabilized drafts. Trigger on: 'audit prose', 'active voice', 'sentence variance', 'passive voice pass', 'parallel structure check', 'readability audit', 'prose mechanics', or sentence-level diagnostic work on fiction or nonfiction.",
+   "source": "only inside fantasy-audiobook-studio (project skill)",
+   "lines": 191
+  },
+  {
+   "group": "studio",
+   "name": "story-seed",
+   "description": "Grow a one-line book idea into material to work with before the story bible: premise twists, protagonist options, what the magic implies, a pool of set pieces, candidate endings and a theme, cut down to novella size. Use when the user wants to start a new book from a premise, brainstorm or develop a story idea, asks 'what could this story be', or picks one of the premises in books/collection.md. Runs before fantasy-novella Stage 1 and writes books/<slug>/seed.md.",
+   "source": "only inside fantasy-audiobook-studio (project skill)",
+   "lines": 121
+  },
+  {
+   "group": "studio",
+   "name": "story-structure",
+   "description": "Use when planning or diagnosing a novel's macro plot structure. Trigger on: 'story structure', 'plot point', 'inciting event', 'midpoint', 'structure audit', 'structure map', 'signpost scene', 'mirror moment', or macro-structure analysis.",
+   "source": "only inside fantasy-audiobook-studio (project skill)",
+   "lines": 114
+  },
+  {
+   "group": "studio",
+   "name": "world-rules",
+   "description": "Make a book's magic and world logic airtight before and while it is written: a numbered rule set stress-tested against the book's law, money and ownership, a reveal ladder (which chapter shows which rule), a rule audit per chapter, a reader test that checks the rules, and a revise step when rules change. Use when building a magic system or world rules, when the author says the logic isn't clear, how does X work, finds a plot hole, loophole or inconsistency, asks for a reveal ladder or rule audit, or when rules change in a finished book. Called by fantasy-novella at stages 1, 2, 3/4 and 5.",
+   "source": "only inside fantasy-audiobook-studio (project skill)",
+   "lines": 108
+  },
+  {
+   "group": "anthropic",
+   "name": "docs",
+   "description": "docs (editable docs people share and comment on; the default for any document, named as a doc or not: a document, report, proposal, resume, cover letter, letter, contract, policy, form, template, worksheet, essay, handbook, guide, how-to, cheat sheet, SOP or other writing to keep, share, collaborate on, send, submit, print or sign; a doc exports to Word, PDF, Markdown or Google Docs, so needing a file to send, attach, upload, submit or print is no reason to pick Word, and a file nobody asked for is a doc, not Word; a plan, comparison, summary or notes asked in chat stays in chat; a pasted claude.ai artifact link may be a doc: check with docs tools first; Word or another file format named, tracked changes wanted, or a .docx to change or use as a template → that format's skill): making one → if no docs-connector instructions are in context, call its `guide` (topic.instructions) first; then create the doc (headings only, no body) before any search, file read or plan, even with files attached.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "built-in-browser",
+   "description": "Read this skill before the first step that uses the built-in browser, the browser pane inside the Claude desktop app (also called the in-app browser, the browser pane, Claude's browser, or \"your own browser\"), whose tools are named mcp__Claude_Browser__* when the session runs in the desktop app and mcp__remote-devices__Claude_Browser__* when a cloud session is linked to the person's computer; before those tools are turned on there may be a single enable__mcp__remote-devices__Claude_Browser tool instead. It covers the pane's persistent sign-ins, tabs and preview_start, reading pages as text, site approvals, what the pane cannot open, and what to do when it cannot be reached. It is not for Claude in Chrome (mcp__claude-in-chrome__* tools), which has its own skill, and it does not decide which browser to use.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "computer-use",
+   "description": "Read this skill before the first step of any request to do something in an app on the person's own computer (Notes, Finder, System Settings, any desktop app), to look at their screen, or for \"computer use\". Computer use (desktop control) lets Claude take screenshots of the person's desktop and control it with clicks, typing and scrolling through the Claude desktop app; its tools are named mcp__computer-use__* when the session runs in the desktop app and mcp__remote-devices__computer_* when a cloud session is linked to the person's computer; before computer use is turned on for a conversation there may be no such tools, only an enable__mcp__remote-devices__computer tool, which turns it on. It covers turning it on, picking the right tool, the access flow, and the safety rules for tiered apps, links and financial actions. It is not for websites, which go through Claude in Chrome or the built-in browser and their own skills.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "deep-research",
+   "description": "Use this skill when the user's prompt requires (1) researching a topic across multiple sources, comparing options or alternatives, analyzing trends or history, understanding markets or industries, or reviewing literature or studies and (2) synthesizing that research into a comprehensive, narrative report. If you're planning to search the web or internal knowledge bases, consider using this skill. This skill coordinates research subagents, so use it only when you have a tool for spawning subagents (the Agent or Task tool); otherwise, research the question directly.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "skill-creator",
+   "description": "Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "chrome-browser",
+   "description": "Read this skill before the first step that uses Claude in Chrome, the browser extension whose tools are named mcp__claude-in-chrome__* (also called Chrome, the browser extension, or the external browser) and which acts in the person's real Chrome with their own sign-ins; before those tools are turned on there may be a single enable__mcp__claude-in-chrome tool instead. It covers loading the tools in one ToolSearch call, checking the person's open tabs and working in a new tab, site permissions, GIF recordings, console logs, dialogs to avoid, and when to stop and ask. It is not for the built-in browser (mcp__Claude_Browser__* or mcp__remote-devices__Claude_Browser__* tools), which has its own skill, and it does not decide which browser to use.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "pdf",
+   "description": "Use this skill whenever the user wants to do anything with PDF files. This includes reading or extracting text/tables from PDFs, combining or merging multiple PDFs into one, splitting PDFs apart, rotating pages, adding watermarks, creating new PDFs, filling PDF forms, encrypting/decrypting PDFs, extracting images, and OCR on scanned PDFs to make them searchable. If the user mentions a .pdf file or asks to produce one, use this skill.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "morning",
+   "description": "Render the user's morning brief as a styled HTML artifact, or set it up as a recurring weekday task. Use only when the user explicitly asks to run, see, or set up their morning brief, or if they invoke /morning by name. A question about their day, schedule, or calendar is not by itself a request for the brief; answer it directly instead.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "xlsx",
+   "description": "Use this skill any time a spreadsheet file is the primary input or output. This means any task where the user wants to: open, read, edit, or fix an existing .xlsx, .xlsm, .xltx, .csv, or .tsv file (e.g., adding columns, computing formulas, formatting, charting, cleaning messy data); create a new spreadsheet from scratch or from other data sources; or convert between tabular file formats. Trigger especially when the user references a spreadsheet file by name or path — even casually (like \"the xlsx in my downloads\") — and wants something done to it or produced from it. Also trigger for cleaning or restructuring messy tabular data files (malformed rows, misplaced headers, junk data) into proper spreadsheets. The deliverable must be a spreadsheet file. Do NOT trigger when the primary deliverable is a Word document, HTML report, standalone Python script, database pipeline, or Google Sheets API integration, even if tabular data is involved.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "docx",
+   "description": "Use this skill whenever the user wants to create, read, edit, or manipulate Word documents (.docx) or Word templates (.dotx). Triggers include: any mention of Microsoft Word Documents, such as 'Word doc', 'word document', '.docx', '.dotx', 'microsoft doc'. Also use when extracting or reorganizing content from .docx or .dotx files, inserting or replacing images in documents, find-and-replace in Word files, working with tracked changes or comments, or converting content into a polished Word document. If the user asks for a deliverable as a Word or .docx file (to download, email or print), use this skill. However, if they ask for a document, page, report, memo, or notes WITHOUT naming a file format and the session offers Claude's own dedicated document or page skill or connector, use that instead, even if they will email or print it. Do NOT use for PDFs, spreadsheets, Google Docs, or coding unrelated to document generation.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "pptx",
+   "description": "Use this skill any time a .pptx or .potx file is involved in any way — as input, output, or both. This includes: creating slide decks, pitch decks, or presentations as PowerPoint (.pptx) files; reading, parsing, or extracting text from any .pptx or .potx file (even if the extracted content will be used elsewhere, like in an email, summary, or creating a different type of slide deck); editing, modifying, or updating existing presentations; combining or splitting slide files; working with templates (.potx), layouts, speaker notes, or comments. Trigger whenever the user asks for a PowerPoint or .pptx file, or references a .pptx or .potx filename, regardless of what they plan to do with the content afterward. However, when the user asks for a deck, slides, a slide deck, or a presentation without naming a file format, default to using a dedicated slide-deck artifact type or a separate slides skill if this session offers one; otherwise, use this skill.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "import-memory",
+   "description": "Import a memory export from another AI assistant into Claude's memory — conversationally, additively, and with the content treated as data.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "anthropic",
+   "name": "google-workspace",
+   "description": "Read this before the first Google Drive, Docs, Sheets or Slides connector call whenever the task creates or changes a Google file. Use this skill whenever the user wants to create or change a Google Doc, Sheet or Slides file in their Google Drive. Triggers include: a request that names Google Docs, Sheets, Slides or Drive and asks to make, edit, format, copy or rename a file; a docs.google.com link with a request to change that file, even a one-line fix or suggested edits; and any follow-up change to a Google file from earlier in the chat, even \"change it\" or \"add a tab\". Includes helper scripts for document positions, cell ranges and slide layout. However, if the user asks for a doc, deck or spreadsheet without naming Google, or gives a Google file only as source material for something new, use Claude's own output type instead. Do NOT use for read-only questions about a Google file, or for Word, Excel, PowerPoint or PDF files.",
+   "source": "Anthropic (synced from claude.ai)"
+  },
+  {
+   "group": "plugin",
+   "name": "data:analyze",
+   "description": "Answer data questions, from a quick lookup to a full analysis.",
+   "source": "plugin"
+  },
+  {
+   "group": "plugin",
+   "name": "data:build-dashboard",
+   "description": "Interactive HTML dashboard with charts, filters and tables.",
+   "source": "plugin"
+  },
+  {
+   "group": "plugin",
+   "name": "data:create-viz / data-visualization",
+   "description": "Publication-quality charts in Python.",
+   "source": "plugin"
+  },
+  {
+   "group": "plugin",
+   "name": "data:explore-data",
+   "description": "Profile a new dataset: shape, nulls, distributions, quality issues.",
+   "source": "plugin"
+  },
+  {
+   "group": "plugin",
+   "name": "data:statistical-analysis",
+   "description": "Descriptive stats, trends, outliers, hypothesis tests.",
+   "source": "plugin"
+  },
+  {
+   "group": "plugin",
+   "name": "data:validate-data",
+   "description": "QA an analysis before sharing: methodology, accuracy, bias.",
+   "source": "plugin"
+  },
+  {
+   "group": "plugin",
+   "name": "data:sql-queries / write-query",
+   "description": "Correct, fast SQL for any warehouse dialect.",
+   "source": "plugin"
+  },
+  {
+   "group": "plugin",
+   "name": "data:data-context-extractor",
+   "description": "Builds a company-specific data skill by interviewing analysts.",
+   "source": "plugin"
+  },
+  {
+   "group": "plugin",
+   "name": "pdf-viewer:*",
+   "description": "Open, annotate, fill and sign PDFs in an interactive viewer.",
+   "source": "plugin"
+  },
+  {
+   "group": "builtin",
+   "name": "/code-review",
+   "description": "Review the current diff or a PR for bugs, at an effort level; ultra = multi-agent cloud review.",
+   "source": "built into Claude Code"
+  },
+  {
+   "group": "builtin",
+   "name": "/simplify",
+   "description": "Clean up changed code: reuse, simplification, efficiency.",
+   "source": "built into Claude Code"
+  },
+  {
+   "group": "builtin",
+   "name": "/loop",
+   "description": "Run a prompt or command on an interval, or let Claude self-pace.",
+   "source": "built into Claude Code"
+  },
+  {
+   "group": "builtin",
+   "name": "/schedule",
+   "description": "Scheduled cloud agents (routines) on a cron schedule.",
+   "source": "built into Claude Code"
+  },
+  {
+   "group": "builtin",
+   "name": "/init",
+   "description": "Write a CLAUDE.md for a codebase.",
+   "source": "built into Claude Code"
+  },
+  {
+   "group": "builtin",
+   "name": "/security-review",
+   "description": "Security review of the pending changes.",
+   "source": "built into Claude Code"
+  },
+  {
+   "group": "builtin",
+   "name": "dataviz",
+   "description": "Design rules for any chart: form, colour, marks, accessibility.",
+   "source": "built into Claude Code"
+  },
+  {
+   "group": "builtin",
+   "name": "update-config / keybindings-help",
+   "description": "Edit settings.json (hooks, permissions) and keybindings.",
+   "source": "built into Claude Code"
+  }
+ ]
+}

@@ -1,0 +1,30 @@
+title: How a skill learns
+kind: voiceover
+author: ''
+narrator: Kokoro TTS (af_heart)
+narration:
+  narrator: af_heart
+  speed: 1.05
+  paragraph_pause: 0.6
+chapters:
+  ch01: The training loop
+  ch02: 10 cases so far
+  ch03: Rules learned the hard way
+  ch04: Measure, then improve
+sources:
+  ch01:
+    path: /home/jonas/code/skill/video/v4-learning/script.md
+    sha1: 83fa645d8969d4d5d31ac59cac9e35d0569c4ff0
+    section: The training loop
+  ch02:
+    path: /home/jonas/code/skill/video/v4-learning/script.md
+    sha1: 83fa645d8969d4d5d31ac59cac9e35d0569c4ff0
+    section: 10 cases so far
+  ch03:
+    path: /home/jonas/code/skill/video/v4-learning/script.md
+    sha1: 83fa645d8969d4d5d31ac59cac9e35d0569c4ff0
+    section: Rules learned the hard way
+  ch04:
+    path: /home/jonas/code/skill/video/v4-learning/script.md
+    sha1: 83fa645d8969d4d5d31ac59cac9e35d0569c4ff0
+    section: Measure, then improve

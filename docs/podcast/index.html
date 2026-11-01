@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skills Podcast</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  .ep { margin: 18px 0; }
+  .ep h2 { margin: 2px 0 2px; font-size: 22px; }
+  .ep audio { margin: 12px 0 6px; }
+  .speeds { display: flex; gap: 6px; flex-wrap: wrap; }
+  .speeds button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .transcript p { margin: 0 0 12px; }
+</style>
+</head>
+<body data-root=".." data-page="podcast">
+<main class="wrap narrow">
+  <section class="hero">
+    <div class="eyebrow">For walks and commutes</div>
+    <h1>The Skills School podcast</h1>
+    <p class="lede">Short spoken lessons, about four minutes each. They cover the same ideas as the lessons, told for the ear. Made with your <code>project-podcast</code> skill: written for listening, scanned by speech-flow, voiced by Kokoro, checked by Whisper.</p>
+  </section>
+  <div id="eps"><p class="muted">Loading…</p></div>
+</main>
+<script src="../nav.js"></script>
+<script>
+fetch("../data/podcast.json", { cache: "no-store" }).then(r => r.json()).then(d => {
+  const eps = d.episodes.slice().sort((a, b) => a.n - b.n);   // a course: oldest first
+  document.getElementById("eps").innerHTML = eps.length ? eps.map(e => `
+    <div class="ep card"><div class="eyebrow">Episode ${e.n} · ${e.minutes} min</div><h2>${e.title.replace(/^Episode \d+:\s*/, "")}</h2>
+      <audio controls preload="metadata" src="${e.mp3}"></audio>
+      <div class="speeds">${[1, 1.25, 1.5].map(s => `<button class="btn${s === 1 ? " on" : ""}" data-s="${s}">${s}×</button>`).join("")}</div>
+      ${e.notes.length ? `<h3 style="font-size:16px;margin:14px 0 4px">In this episode</h3><ul>${e.notes.map(n => `<li>${n}</li>`).join("")}</ul>` : ""}
+      <details><summary>Transcript</summary><div class="transcript">${e.transcript.map(p => `<p>${p}</p>`).join("")}</div></details>
+    </div>`).join("") : "<p>No episodes yet.</p>";
+  document.querySelectorAll(".ep").forEach(ep => ep.querySelectorAll(".speeds button").forEach(b => b.onclick = () => {
+    ep.querySelector("audio").playbackRate = +b.dataset.s;
+    ep.querySelectorAll(".speeds button").forEach(x => x.classList.toggle("on", x === b));
+  }));
+});
+</script>
+</body>
+</html>

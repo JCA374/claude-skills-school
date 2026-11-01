@@ -1,0 +1,35 @@
+title: Anatomy of a skill
+kind: voiceover
+author: ''
+narrator: Kokoro TTS (af_heart)
+narration:
+  narrator: af_heart
+  speed: 1.05
+  paragraph_pause: 0.6
+chapters:
+  ch01: A skill is a folder
+  ch02: 'The header: name and description'
+  ch03: 'The body: a briefing for a colleague'
+  ch04: Your nine skills, measured
+  ch05: Scripts do the heavy lifting
+sources:
+  ch01:
+    path: /home/jonas/code/skill/video/v1-anatomy/script.md
+    sha1: 9dc1bc29a9019d006a477a69da3a9b2c9098f87d
+    section: A skill is a folder
+  ch02:
+    path: /home/jonas/code/skill/video/v1-anatomy/script.md
+    sha1: 9dc1bc29a9019d006a477a69da3a9b2c9098f87d
+    section: 'The header: name and description'
+  ch03:
+    path: /home/jonas/code/skill/video/v1-anatomy/script.md
+    sha1: 9dc1bc29a9019d006a477a69da3a9b2c9098f87d
+    section: 'The body: a briefing for a colleague'
+  ch04:
+    path: /home/jonas/code/skill/video/v1-anatomy/script.md
+    sha1: 9dc1bc29a9019d006a477a69da3a9b2c9098f87d
+    section: Your nine skills, measured
+  ch05:
+    path: /home/jonas/code/skill/video/v1-anatomy/script.md
+    sha1: 9dc1bc29a9019d006a477a69da3a9b2c9098f87d
+    section: Scripts do the heavy lifting

@@ -1,0 +1,164 @@
+{
+ "videos": [
+  {
+   "id": "v1-anatomy",
+   "title": "Anatomy of a skill",
+   "lesson": "lesson-1",
+   "seconds": 61,
+   "starts": [
+    0.0,
+    14.71,
+    25.96,
+    37.17,
+    47.8
+   ],
+   "scenes": [
+    {
+     "title": "A skill is a folder",
+     "say": "A skill is a folder. Here is one of yours, the project site skill. The important file is the skill file, written in markdown. Next to it sit scripts that I can run, and templates that I copy into a new project."
+    },
+    {
+     "title": "The header: name and description",
+     "say": "The file starts with a short header. It has two fields. The name, and the description. The description says what the skill does, and, just as important, when to use it."
+    },
+    {
+     "title": "The body: a briefing for a colleague",
+     "say": "Below the header comes the body. It is plain language, written like a briefing for a new colleague. Steps to follow, conventions, and the rules you learned the hard way."
+    },
+    {
+     "title": "Your nine skills, measured",
+     "say": "Here are your nine skills, measured. Every skill file is short. Between fifty and ninety lines. The heavy work lives in the scripts, not in the instructions."
+    },
+    {
+     "title": "Scripts do the heavy lifting",
+     "say": "And this is the code behind them. About fourteen hundred lines in total. When I run a script, only its output comes back to me. So a big script costs me almost nothing to use."
+    }
+   ]
+  },
+  {
+   "id": "v2-loading",
+   "title": "How Claude picks and loads a skill",
+   "lesson": "lesson-2",
+   "seconds": 56,
+   "starts": [
+    0.0,
+    9.3,
+    20.5,
+    32.42,
+    43.88
+   ],
+   "scenes": [
+    {
+     "title": "At the start: only a list",
+     "say": "When a session starts, I do not read your skills. I only see a list. One line per skill, the name and the description. That is all."
+    },
+    {
+     "title": "Your request meets the descriptions",
+     "say": "When you ask for something, I compare your words with every description. Here you ask for a homepage for a training run. One description fits: the project site skill."
+    },
+    {
+     "title": "Three levels of loading",
+     "say": "Now the skill loads in layers. First the body of the skill file. Then, only when a step needs it, a reference file or a script. This is called progressive disclosure."
+    },
+    {
+     "title": "Or call it yourself",
+     "say": "You can also skip the matching. Type a slash and the skill's name, and it loads straight away. That is handy for commands you run on purpose, like a deploy or a review."
+    },
+    {
+     "title": "Why the description matters most",
+     "say": "So the description is the trigger. A weak one says what the skill is. A strong one also lists the words you actually say when you need it. Yours for the project site is a strong one."
+    }
+   ]
+  },
+  {
+   "id": "v3-pipeline",
+   "title": "Skills that work together",
+   "lesson": "lesson-5",
+   "seconds": 56,
+   "starts": [
+    0.0,
+    18.13,
+    30.8,
+    43.78
+   ],
+   "scenes": [
+    {
+     "title": "One job, five skills",
+     "say": "Some jobs are too big for one skill. Your audiobook studio splits narration into five. Speech flow fixes the text for the ear. Narration prep makes the script. Kokoro narrate renders it. Listen check has Whisper listen back. And audiobook assemble packages it."
+    },
+    {
+     "title": "voice-text: one door into the pipeline",
+     "say": "Voice text is the front door. From any project, one launcher calls each stage in order. It reuses the studio's scripts instead of copying them, so a fix in the studio helps everyone."
+    },
+    {
+     "title": "Skills that point to skills",
+     "say": "Your project site skill works the same way. It hands the podcast tab to the podcast skill. The podcast skill hands the audio to voice text. And voice text hands the checking to listen check."
+    },
+    {
+     "title": "This video was made by them",
+     "say": "This very video is an example. The script was scanned for phrasing. Kokoro voiced each scene, Whisper checked it, and each picture was drawn from real files on your machine."
+    }
+   ]
+  },
+  {
+   "id": "v4-learning",
+   "title": "How a skill learns",
+   "lesson": "lesson-6",
+   "seconds": 50,
+   "starts": [
+    0.0,
+    15.78,
+    26.77,
+    38.03
+   ],
+   "scenes": [
+    {
+     "title": "The training loop",
+     "say": "A skill gets better when a lesson is written into it. Your studio has a fixed loop. A problem is reported. It becomes a case with a before and an after. You pick the better one. It becomes a rule, and a test keeps it from being undone."
+    },
+    {
+     "title": "10 cases so far",
+     "say": "Here are the studio's real cases. Short questions that end flat. Commas that break the rhythm. Two word lines that feel lazy. Each one is now a rule."
+    },
+    {
+     "title": "Rules learned the hard way",
+     "say": "Your project site skill learns the same way. It has a list of rules learned the hard way. One of them exists because a rebase once threw away an hour of work."
+    },
+    {
+     "title": "Measure, then improve",
+     "say": "To know that a skill helps, measure it. The skill creator runs the same task with the skill and without it, and you compare. If the skill does not win, change it and run again."
+    }
+   ]
+  },
+  {
+   "id": "v5-reviewer",
+   "title": "A skill that reviews papers",
+   "lesson": "example",
+   "seconds": 51,
+   "starts": [
+    0.0,
+    13.03,
+    25.31,
+    38.08
+   ],
+   "scenes": [
+    {
+     "title": "The idea",
+     "say": "Here is a skill you could build next. It reviews academic papers and reports, the way a careful referee would. It follows the same path every time, and every finding points to a page."
+    },
+    {
+     "title": "The review path",
+     "say": "The path has five steps. Summarize the claim. Check it against the evidence. Look for luck or leaks in the method. Check the sources. Then give a verdict with a confidence level."
+    },
+    {
+     "title": "The folder",
+     "say": "The checklists go in a references folder, one per kind of paper. A script pulls out the text and tables. Another script checks that every quote in the review really appears in the paper."
+    },
+    {
+     "title": "Make it learn",
+     "say": "Then make it learn, like the studio. Keep test papers with known flaws. When a review misses one, that becomes a case and a rule. Run every test paper again after each change."
+    }
+   ]
+  }
+ ]
+}

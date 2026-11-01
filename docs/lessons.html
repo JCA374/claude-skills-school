@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skills Lessons</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 36px; }
+  .toc { position: sticky; top: 76px; align-self: start; font-size: 15px; }
+  .toc a { display: block; color: var(--muted); text-decoration: none; padding: 5px 0 5px 10px; border-left: 2px solid var(--line); }
+  .toc a.done::after { content: " ✓"; color: var(--green); }
+  .toc a:hover { color: var(--text); border-color: var(--accent); }
+  .lesson { padding-top: 24px; border-top: 1px solid var(--line); margin-top: 40px; scroll-margin-top: 70px; }
+  .lesson:first-of-type { border-top: 0; margin-top: 0; }
+  .lesson h2 { margin-top: 4px; }
+  .try { background: var(--sunk); border: 1px dashed var(--line); border-radius: 12px; padding: 14px 18px; margin: 18px 0; }
+  .try b:first-child { color: var(--green); }
+  .quiz { margin: 14px 0; }
+  .doneLabel { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; color: var(--muted); font-size: 15px; margin-top: 8px; }
+  @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } .toc { display: none; } }
+</style>
+</head>
+<body data-root="." data-page="lessons">
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">8 lessons · about 15 minutes each</div>
+    <h1>Lessons</h1>
+    <p class="lede">Each lesson has a short explanation, an example from your own skills, a "try it" exercise to do in Claude Code, and a quick self-check. Lessons with a ▶ have a video and those with a 🎧 a podcast episode on the same topic.</p>
+  </section>
+<div class="layout">
+<nav class="toc" id="toc"></nav>
+<div>
+
+<!-- 1 -->
+<section class="lesson" id="lesson-1">
+  <div class="eyebrow">Lesson 1</div>
+  <h2>What a skill is</h2>
+  <div class="media-row"><a class="btn" href="videos.html#v1-anatomy">▶ Anatomy of a skill</a><a class="btn" href="podcast/index.html">🎧 Episode 1</a></div>
+  <p>A skill is a <b>folder</b> containing a file called <code>SKILL.md</code>. The file has two parts:</p>
+  <ol>
+    <li><b>A YAML header</b> (frontmatter) between <code>---</code> lines. It must have a <code>name</code> and a <code>description</code>.</li>
+    <li><b>A markdown body</b>: the instructions, written like a briefing for a capable colleague who has never seen your project.</li>
+  </ol>
+  <p>Next to it there can be anything the instructions need: <code>scripts/</code> (code Claude runs), <code>references/</code> (longer docs Claude reads only when told to), <code>assets/</code> or <code>template/</code> (files copied into the output).</p>
+<pre><code>ml-project-site/
+├── SKILL.md               ← 71 lines: when to use, set-up steps, rules
+├── scripts/init.sh        ← copies the template into a project
+└── template/              ← publish.py, publish_loop.sh, docs/*.js, style.css …
+project-podcast/
+├── SKILL.md
+├── scripts/prepare.sh, publish.sh, make_feed.py, conf.sh
+└── assets/index.html, podcast.conf.example</code></pre>
+  <p>Look at the sizes on the <a href="skills.html">Your skills</a> page. Your skill files are 52–85 lines each, and the scripts behind them are about 1,400 lines. That's the right shape: <b>short instructions, heavy code</b>. The instructions explain intent and judgment. The code does the repeatable work exactly the same way every time.</p>
+  <div class="callout"><b>Skill vs prompt.</b> A prompt is gone after one chat. A skill is a prompt that is saved, versioned and reused, can ship its own tools, and loads itself when relevant. Each time you write the same instructions to Claude for the third time, that's a skill waiting to be written.</div>
+  <div class="try"><b>Try it.</b> In any project, ask Claude: <i>"Show me the SKILL.md of project-podcast and explain each section in one line."</i> Then open <code>~/.claude/skills/project-podcast/</code> yourself and compare.</div>
+  <details class="quiz"><summary>Self-check: which two header fields are required?</summary><p><code>name</code> and <code>description</code>. Everything else is optional.</p></details>
+</section>
+
+<!-- 2 -->
+<section class="lesson" id="lesson-2">
+  <div class="eyebrow">Lesson 2</div>
+  <h2>How Claude picks and loads a skill</h2>
+  <div class="media-row"><a class="btn" href="videos.html#v2-loading">▶ How Claude picks and loads a skill</a><a class="btn" href="podcast/index.html">🎧 Episode 1</a></div>
+  <p>This is the most important lesson. Skills use <b>progressive disclosure</b>, which means three levels of loading:</p>
+  <div class="step"><div class="n">1</div><div><b>Always:</b> at the start of every session Claude gets a list with the <b>name and description</b> of each available skill, and nothing else. This costs roughly 100 words per skill.</div></div>
+  <div class="step"><div class="n">2</div><div><b>When chosen:</b> if your request matches a description (or you type <code>/skill-name</code>), Claude calls its Skill tool and the <b>body of SKILL.md</b> is loaded into the conversation.</div></div>
+  <div class="step"><div class="n">3</div><div><b>When a step needs it:</b> Claude reads a reference file or runs a script that the body points to. A script's code doesn't need to be read at all. Only its output comes back.</div></div>
+  <p>Consequences you can use:</p>
+  <ul>
+    <li><b>You can install many skills.</b> Unused ones cost a line each, not their whole content.</li>
+    <li><b>The description decides everything.</b> If it doesn't match how you phrase requests, the skill never loads (lesson 4).</li>
+    <li><b>Claude only reaches for a skill when the task needs one.</b> A one-step request like "read this PDF" may be done directly, even if a PDF skill exists. Multi-step, specialised work is where skills fire reliably.</li>
+    <li><b>Your CLAUDE.md can point at skills.</b> Yours says "for ML project websites use <code>ml-project-site</code>". That's a strong, cheap hint that tips the choice.</li>
+  </ul>
+  <div class="try"><b>Try it.</b> Start a fresh session and say: <i>"I want a live progress page for my new RL run."</i> Watch for the <code>Skill(ml-project-site)</code> call. Then try a vague version, <i>"make a website"</i>, and see whether it still fires.</div>
+  <details class="quiz"><summary>Self-check: why doesn't a 2,000-line reference file slow down every session?</summary><p>Because it's level 3: it's only read when a step in SKILL.md says to read it. Until then, only the description (level 1) is in context.</p></details>
+</section>
+
+<!-- 3 -->
+<section class="lesson" id="lesson-3">
+  <div class="eyebrow">Lesson 3</div>
+  <h2>Where skills live, and what is <i>not</i> a skill</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Place</th><th>Scope</th><th>Your example</th></tr>
+    <tr><td><code>~/.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>you, every project</td><td>ml-project-site, failure-analysis-report</td></tr>
+    <tr><td><code>&lt;repo&gt;/.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>anyone working in that repo (commit it!)</td><td>the studio's fantasy-novella, story-structure, manuscript-review…</td></tr>
+    <tr><td>symlink from personal → project</td><td>one source, used everywhere</td><td>the six audio skills point into the studio</td></tr>
+    <tr><td>plugins</td><td>installed bundles, named <code>plugin:skill</code></td><td>data:analyze, pdf-viewer:annotate</td></tr>
+    <tr><td>synced from claude.ai</td><td>Anthropic's skills, kept updated</td><td>skill-creator, docx, pdf, deep-research</td></tr>
+  </table></div>
+  <div class="callout warn"><b>A real gotcha on your machine:</b> <code>~/.claude/skills/deploy.md</code> is a loose file. Claude Code looks for <i>folders</i> containing <code>SKILL.md</code>, so this one never appears in the skill list. Fix: <code>mkdir ~/.claude/skills/deploy && mv ~/.claude/skills/deploy.md ~/.claude/skills/deploy/SKILL.md</code> (and fix its path, see <a href="improve.html#audit">the audit</a>).</div>
+  <h3>Skills vs the other ways to steer Claude</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Tool</th><th>Loaded</th><th>Use it for</th></tr>
+    <tr><td><b>CLAUDE.md</b></td><td>every session, in full</td><td>short permanent preferences and pointers ("use skill X for Y"). Keep it small: it always costs context.</td></tr>
+    <tr><td><b>Skill</b></td><td>description always, body on demand</td><td>a whole procedure: steps, rules, scripts, templates</td></tr>
+    <tr><td><b>Memory</b></td><td>an index every session, notes on demand</td><td>facts Claude learned about you and projects over time</td></tr>
+    <tr><td><b>Hooks</b> (settings.json)</td><td>run by the harness, not by Claude</td><td>"every time X happens, do Y" for guarantees, e.g. run tests after each edit. A skill can't guarantee this; a hook can.</td></tr>
+    <tr><td><b>Subagents</b></td><td>a separate context window</td><td>big searches or parallel work whose details you don't need in the main chat</td></tr>
+    <tr><td><b>MCP servers</b></td><td>tools Claude can call</td><td>new <i>abilities</i>: Gmail, Drive, a database. A skill teaches <i>how</i> to use them.</td></tr>
+  </table></div>
+  <div class="try"><b>Try it.</b> Ask Claude: <i>"Which skills can you see right now? List them by source."</i> Check that deploy is missing, then do the fix above and ask again in a new session.</div>
+  <details class="quiz"><summary>Self-check: you want Claude to always run the rule tests after editing a speech-flow rule. Skill or hook?</summary><p>For a guarantee, a hook (PostToolUse on edits to that path). The skill already <i>asks</i> for it, which works most of the time; a hook makes it certain.</p></details>
+</section>
+
+<!-- 4 -->
+<section class="lesson" id="lesson-4">
+  <div class="eyebrow">Lesson 4</div>
+  <h2>Writing the description: the trigger</h2>
+  <p>A good description answers two questions: <b>what does it do</b> and <b>when should Claude use it</b>. It should include the words you actually say, plus the near-synonyms. Claude tends to <i>under</i>-use skills, so lean towards being explicit ("use it whenever…, even if they don't say X").</p>
+  <h3>Your best one, annotated</h3>
+<pre><code>description: Write, voice and deploy a short spoken podcast episode       ← WHAT
+  about a project's progress to the project's GitHub Pages site …
+  Use it whenever something significant happens in a long-running        ← WHEN (event)
+  project (a breakthrough, a stage or goal passed, a new best result …),
+  or whenever the user asks for a podcast, an audio update, an episode,  ← WHEN (words)
+  a spoken summary of progress, or to publish/deploy an episode,
+  even if they don't say "podcast".                                      ← pushes past exact words</code></pre>
+  <h3>A checklist</h3>
+  <ul>
+    <li>Starts with a verb phrase saying what it produces.</li>
+    <li>"Use when …" lists situations <i>and</i> trigger words.</li>
+    <li>Names the boundaries if a neighbour skill is similar ("not for Word files; use docx"). Anthropic's own skills do this a lot.</li>
+    <li>States inputs and outputs if it's a pipeline stage. Your <code>kokoro-narrate</code> says "Input is …chNN.txt from narration-prep; output is … for audiobook-assemble", so Claude can chain them correctly.</li>
+    <li>Fewer than ~120 words. Yours range from 46 to 119.</li>
+  </ul>
+  <div class="try"><b>Try it.</b> Rewrite the description of <code>failure-analysis-report</code> so it also fires for "why does my model crash in level 3?" or "find better features". Then test both versions with the skill-creator's description optimizer (lesson 7).</div>
+  <details class="quiz"><summary>Self-check: what's wrong with "description: Helper for websites"?</summary><p>No "when", no trigger words, no boundaries. Claude can't tell when it applies, so it will rarely be chosen and sometimes chosen wrongly.</p></details>
+</section>
+
+<!-- 5 -->
+<section class="lesson" id="lesson-5">
+  <div class="eyebrow">Lesson 5</div>
+  <h2>Scripts, references and pipelines</h2>
+  <div class="media-row"><a class="btn" href="videos.html#v3-pipeline">▶ Skills that work together</a></div>
+  <p><b>Put in a script</b> whatever must be done exactly the same way every time: rendering, loudness normalisation, publishing, feed building. <b>Put in the instructions</b> what needs judgment: which voice, whether a phrasing flag is real, what to say in an episode. </p>
+  <p><b>References</b> are for long material that's only sometimes needed, such as a checklist per domain. The body should say <i>when</i> to read each one ("for ML papers read references/ml-papers.md").</p>
+  <h3>Pipelines: skills that hand over to skills</h3>
+  <p>Your audio work is split into five single-purpose stages, each with a clear input and output file:</p>
+<pre><code>chNN.md ─speech-flow→ chNN.md (fixed for the ear) ─narration-prep→ audio/chNN.txt
+        ─kokoro-narrate→ audio/chNN.wav ─listen-check→ chNN.listen.json ─audiobook-assemble→ .mp3 + .m4b</code></pre>
+  <p><code>voice-text</code> then gives one launcher (<code>voice.sh new|scan|prep|narrate|listen|export|status</code>) that any project can use. <code>project-podcast</code> builds on voice-text, and <code>ml-project-site</code> builds on project-podcast. Because each layer <b>calls</b> the one below rather than copying it, a fix in the studio improves every podcast.</p>
+  <div class="callout good"><b>Verification gates.</b> Your best skills end with a check that proves the job is done: "Deployment counts only when Pages says <code>built &lt;HEAD sha&gt;</code> and the page returns 200"; <code>voice.sh status</code> exits 0 only when all five stages PASS. Without such a gate, "done" means "Claude thinks it's done".</div>
+  <div class="try"><b>Try it.</b> In any repo: <i>"Use voice-text to turn README.md into an MP3."</i> Follow the stages it runs, and look at <code>voice/&lt;slug&gt;/pipeline.log.jsonl</code> afterwards.</div>
+</section>
+
+<!-- 6 -->
+<section class="lesson" id="lesson-6">
+  <div class="eyebrow">Lesson 6</div>
+  <h2>How a skill learns</h2>
+  <div class="media-row"><a class="btn" href="videos.html#v4-learning">▶ How a skill learns</a><a class="btn" href="podcast/index.html">🎧 Episode 2</a></div>
+  <p>A skill doesn't learn from data on its own. It learns because <b>a lesson gets written into it</b>. A chat is forgotten; a skill file isn't. Your audiobook studio has the best loop on your machine:</p>
+  <div class="step"><div class="n">1</div><div><b>Report:</b> you say "this sounds wrong", or listen-check flags it and a second Whisper model agrees.</div></div>
+  <div class="step"><div class="n">2</div><div><b>Case:</b> <code>training/NN-slug.md</code> plus a <code>.before</code> and an <code>.after</code> script, both rendered to audio.</div></div>
+  <div class="step"><div class="n">3</div><div><b>You choose</b> by ear. Taste stays with you.</div></div>
+  <div class="step"><div class="n">4</div><div><b>Rule:</b> added to the right skill ("Learned rules" in narration-prep, the check table in speech-flow).</div></div>
+  <div class="step"><div class="n">5</div><div><b>Test:</b> a before/after pair in <code>rule-tests.yaml</code>; <code>test_rules.py</code> must pass before publishing, so a new rule can't quietly undo an old fix.</div></div>
+  <p>Ten cases so far. Case 01 (a flat "Can I?") became the <code>(+2)</code> + <code>??</code> markup that now runs on every book and podcast, including this site's. Case 08 ("I want it on the record" heard as "I wanted on the record") was found by the machine listener, not by you.</p>
+  <div class="callout good"><b>It happened while building this site.</b> Podcast episode 2 quoted case 08's line word for word, and Kokoro made exactly the same mistake again: listen-check flagged "want it" heard as "wanted" at 1:36. The rule from case 08 ("avoid <i>want it</i> + vowel in af_heart") applies to every text, including a lesson <i>about</i> the rule. The episode was rephrased and re-rendered; only the changed paragraph had to be voiced again, thanks to the per-paragraph cache.</div>
+  <p>Your <code>ml-project-site</code> shows the lighter version: a "Rules learned the hard way" section. "Never <code>git pull --rebase --autostash</code>" is there because it once silently reverted an hour of work.</p>
+  <div class="try"><b>Try it.</b> Next time Claude does something wrong while using a skill, say: <i>"Write this lesson into the skill, with the why, and add a check if it can be detected."</i></div>
+  <details class="quiz"><summary>Self-check: why keep the "before" version of a case?</summary><p>So you can hear (or test) that the rule really made the difference, and re-check old cases when rules change later.</p></details>
+</section>
+
+<!-- 7 -->
+<section class="lesson" id="lesson-7">
+  <div class="eyebrow">Lesson 7</div>
+  <h2>Measuring a skill (skill-creator)</h2>
+  <p>Anthropic's <code>skill-creator</code> skill (already synced to your machine) turns "it feels better" into a measurement:</p>
+  <ol>
+    <li><b>Test prompts:</b> 3–5 realistic requests, the kind you would actually type.</li>
+    <li><b>Paired runs:</b> each prompt runs <b>with the skill and without it</b> (or with the old version), in parallel subagents.</li>
+    <li><b>Assertions + review:</b> objective checks are graded automatically; you look at outputs side by side in a viewer and leave feedback.</li>
+    <li><b>Iterate:</b> improve, re-run into <code>iteration-N+1</code>, compare against the previous one.</li>
+    <li><b>Description optimisation:</b> ~20 queries that <i>should</i> and <i>should not</i> trigger the skill, including near misses; it measures how often the skill fires and rewrites the description to do better.</li>
+  </ol>
+  <p>This is exactly your <code>failure-analysis-report</code> discipline applied to skills: paired comparison against a baseline, and "findings are leads until validated".</p>
+  <div class="try"><b>Try it.</b> <i>"Use skill-creator to benchmark project-podcast: three test episodes from the bipedal project, with and without the skill."</i></div>
+</section>
+
+<!-- 8 -->
+<section class="lesson" id="lesson-8">
+  <div class="eyebrow">Lesson 8</div>
+  <h2>Writing style that works</h2>
+  <ul>
+    <li><b>Explain the why.</b> "NEVER X" in capitals gets obeyed but can't be generalised. "Don't X, because Y" lets Claude handle cases you didn't foresee. Your <code>listen-check</code> explains in a whole paragraph, with measurements, why there is <i>no</i> pitch check. Nobody will re-add it by mistake.</li>
+    <li><b>Keep it lean.</b> Aim for SKILL.md under ~500 lines; move detail into <code>references/</code> with a clear "read this when…". Remove instructions that make Claude waste time.</li>
+    <li><b>Point to a reference implementation.</b> "lunarlander-98 is the reference: look there for a complete example of every hook" beats pages of description. Make sure the path is right (see the audit).</li>
+    <li><b>Bundle repeated work.</b> If Claude writes the same helper script in three sessions, put it in <code>scripts/</code>.</li>
+    <li><b>Say what "done" means</b>, and how to verify it (lesson 5).</li>
+    <li><b>Ask-first points.</b> Your ml-project-site says "ask the user before creating a public repo". Write down which actions need your OK.</li>
+    <li><b>Trust.</b> A skill can make Claude run code. Only install skills from sources you trust, and read the scripts of any skill you download.</li>
+  </ul>
+  <div class="try"><b>Try it.</b> Go to <a href="improve.html">Improve skills</a> and fix one item from the audit of your own skills.</div>
+</section>
+
+</div></div>
+</main>
+<script src="nav.js"></script>
+<script>
+// Per-viewer progress (a convenience only; the page works without it).
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+const toc = document.getElementById('toc');
+document.querySelectorAll('.lesson').forEach(sec => {
+  const id = sec.id, title = sec.querySelector('h2').textContent;
+  const a = document.createElement('a'); a.href = '#' + id; a.textContent = sec.querySelector('.eyebrow').textContent.replace('Lesson ', '') + '. ' + title;
+  toc.append(a);
+  const lab = document.createElement('label'); lab.className = 'doneLabel';
+  const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = store.get('done-' + id) === '1';
+  a.classList.toggle('done', cb.checked);
+  cb.onchange = () => { store.set('done-' + id, cb.checked ? '1' : '0'); a.classList.toggle('done', cb.checked); };
+  lab.append(cb, ' I finished this lesson'); sec.append(lab);
+});
+</script>
+</body>
+</html>

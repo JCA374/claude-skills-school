@@ -1,0 +1,4 @@
+== ch01  0:15 audio, checked in 18s: 0 to listen to  (0 dismissed by the second model)
+== ch02  0:10 audio, checked in 5s: 0 to listen to  (0 dismissed by the second model)
+== ch03  0:10 audio, checked in 4s: 0 to listen to  (0 dismissed by the second model)
+== ch04  0:11 audio, checked in 4s: 0 to listen to  (0 dismissed by the second model)

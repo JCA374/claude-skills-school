@@ -1,0 +1,5 @@
+["The studio's training loop: report → case (before/after audio) → author picks → rule → rule test",
+ "10 training cases so far; case 01 (flat short question) now runs on every book and podcast",
+ "listen-check: Whisper + a second model caught 'I want it on the record' → 'I wanted on the record' (case 08)",
+ "ml-project-site's 'rules learned the hard way': never rebase --autostash",
+ "skill-creator: with-skill vs baseline evals, description trigger tests; explain the why, keep SKILL.md < ~500 lines"]

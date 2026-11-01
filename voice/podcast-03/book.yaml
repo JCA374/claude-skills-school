@@ -1,0 +1,14 @@
+title: 'Episode 03: A skill that reviews papers'
+kind: prose
+author: ''
+narrator: Kokoro TTS (af_heart)
+narration:
+  narrator: af_heart
+  speed: 0.95
+  paragraph_pause: 0.6
+chapters:
+  ch01: 'Episode 03: A skill that reviews papers'
+sources:
+  ch01:
+    path: /home/jonas/code/skill/podcast/episode-03.md
+    sha1: 04404d2acd560e07a1282837f36382dacb3176f4

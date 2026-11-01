@@ -1,0 +1,7 @@
+== ch01  0:13 audio, checked in 18s: 1 to listen to  (0 dismissed by the second model)
+    0:06  swapped  expected: 'dot m d'                        heard: 'md'
+== ch02  0:10 audio, checked in 3s: 0 to listen to  (0 dismissed by the second model)
+== ch03  0:10 audio, checked in 3s: 0 to listen to  (0 dismissed by the second model)
+== ch04  0:10 audio, checked in 3s: 0 to listen to  (0 dismissed by the second model)
+== ch05  0:12 audio, checked in 8s: 1 to listen to  (0 dismissed by the second model)
+    0:02  swapped  expected: 'fourteen'                       heard: 'one thousand for'

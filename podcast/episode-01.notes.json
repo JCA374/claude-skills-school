@@ -1,0 +1,5 @@
+["A skill = a folder with SKILL.md (name + description + instructions) and optional scripts/, references/, assets/",
+ "Progressive disclosure: description always loaded (~100 words), body on trigger, scripts/references only when a step needs them",
+ "The description is the trigger: say what AND when, in the words you actually use",
+ "Your 9 personal skills: 3 written for your projects, 6 from the audiobook studio (symlinked). deploy.md is a loose file, so it is not loaded: move it to deploy/SKILL.md",
+ "CLAUDE.md = short permanent preferences; skills = procedures that wait until needed"]
