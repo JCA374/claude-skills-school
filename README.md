@@ -2,7 +2,7 @@
 
 **🌐 Live site: https://jca374.github.io/claude-skills-school/**
 
-A small course on how Claude Code skills work, built from the skills installed on Jonas's laptop:
+A small course on how Claude Code skills work, built from the skills installed on one laptop:
 lessons, short narrated videos, a podcast, an audit of the existing skills, project ideas and a
 ready-to-install `paper-review` skill. Served by GitHub Pages from `main:/docs`.
 

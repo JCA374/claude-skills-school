@@ -4,9 +4,11 @@
 Groups: personal (~/.claude/skills), studio project skills, Anthropic (synced), plugins, built-in commands.
 deploy.md's body is not published (it holds a server address); only what it is.
 """
+import getpass
 import glob
 import json
 import os
+import pwd
 import re
 
 SK = os.path.expanduser('~/.claude/skills')
@@ -24,6 +26,20 @@ PLAIN = {  # one plain sentence per personal skill: what it gives you
     'audiobook-assemble': 'Masters the WAVs into loudness-normalised MP3s and one .m4b with chapters and cover.',
 }
 PIPE = {'speech-flow': 1, 'narration-prep': 2, 'kokoro-narrate': 3, 'listen-check': 4, 'audiobook-assemble': 5}
+
+
+HOME = os.path.expanduser('~')
+# the account's user and first names, read from the system so no name is written in this file
+NAMES = {getpass.getuser()} | {w for w in pwd.getpwuid(os.getuid()).pw_gecos.split(',')[0].split() if len(w) > 2}
+
+
+def redact(s):
+    """No name, home paths or server details on the public page (privacy rule)."""
+    s = s.replace(HOME, '~')
+    for n in NAMES:
+        s = re.sub(rf"\b{re.escape(n)}'s\s+", '', s, flags=re.I)
+        s = re.sub(rf'\b{re.escape(n)}\b', 'the user', s, flags=re.I)
+    return re.sub(r'\b\d{1,3}(\.\d{1,3}){3}\b', '<server>', s)
 
 
 def front(txt):
@@ -57,8 +73,8 @@ for f in sorted(glob.glob(SK + '/*/SKILL.md')):
                        skill_md=open(f).read()))
 
 meta, _ = front(open(SK + '/deploy.md').read())
-skills.append(dict(group='personal', name='deploy (deploy.md)', description=meta.get('description', ''),
-                   plain='rsync + docker restart for the World Cup tips site. NOT loaded: it is a loose file, not deploy/SKILL.md.',
+skills.append(dict(group='personal', name='deploy (deploy.md)', description='Deploy a web app: rsync the code to a server and restart Docker.',
+                   plain='rsync + docker restart for a web app. NOT loaded: it is a loose file, not deploy/SKILL.md.',
                    source='loose file: not loaded', broken=True, lines=23, files=[], skill_md=''))
 
 for f in sorted(glob.glob(STUDIO + '/*/SKILL.md')):
@@ -102,5 +118,5 @@ for n, d in BUILTIN:
     skills.append(dict(group='builtin', name=n, description=d, source='built into Claude Code'))
 
 os.makedirs('docs/data', exist_ok=True)
-json.dump(dict(skills=skills), open('docs/data/skills.json', 'w'), indent=1, ensure_ascii=False)
+json.dump(json.loads(redact(json.dumps(dict(skills=skills), ensure_ascii=False))), open('docs/data/skills.json', 'w'), indent=1, ensure_ascii=False)
 print({g: sum(s['group'] == g for s in skills) for g in ('personal', 'studio', 'anthropic', 'plugin', 'builtin')})

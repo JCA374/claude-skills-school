@@ -5,3 +5,4 @@ video/build/
 __pycache__/
 *.log
 voice/*/audio/
+voice/
